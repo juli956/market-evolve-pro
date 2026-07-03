@@ -16,37 +16,37 @@ export type Database = {
     Tables: {
       products: {
         Row: {
-          category: string | null
+          control_stock: boolean
           cost: number
           created_at: string
+          history: Json
           id: string
-          min_stock: number
           name: string
-          price: number
+          provider: string | null
           stock: number
           updated_at: string
           user_id: string
         }
         Insert: {
-          category?: string | null
+          control_stock?: boolean
           cost?: number
           created_at?: string
+          history?: Json
           id?: string
-          min_stock?: number
           name: string
-          price?: number
+          provider?: string | null
           stock?: number
           updated_at?: string
           user_id: string
         }
         Update: {
-          category?: string | null
+          control_stock?: boolean
           cost?: number
           created_at?: string
+          history?: Json
           id?: string
-          min_stock?: number
           name?: string
-          price?: number
+          provider?: string | null
           stock?: number
           updated_at?: string
           user_id?: string
@@ -60,7 +60,8 @@ export type Database = {
           date: string
           id: string
           items: Json
-          note: string | null
+          notes: string | null
+          payment_method: string | null
           profit: number
           total: number
           updated_at: string
@@ -72,7 +73,8 @@ export type Database = {
           date: string
           id?: string
           items?: Json
-          note?: string | null
+          notes?: string | null
+          payment_method?: string | null
           profit?: number
           total?: number
           updated_at?: string
@@ -84,7 +86,8 @@ export type Database = {
           date?: string
           id?: string
           items?: Json
-          note?: string | null
+          notes?: string | null
+          payment_method?: string | null
           profit?: number
           total?: number
           updated_at?: string
