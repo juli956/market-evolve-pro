@@ -8,6 +8,7 @@ import { Metrics } from "@/components/app/Metrics";
 import { BackupPanel } from "@/components/app/BackupPanel";
 
 export const Route = createFileRoute("/")({
+  ssr: false,
   head: () => ({
     meta: [
       { title: "Gestor de Ventas Pro" },
@@ -20,6 +21,7 @@ export const Route = createFileRoute("/")({
   }),
   component: HomePage,
 });
+
 
 type Tab = "dashboard" | "sales" | "products" | "history" | "metrics" | "backup";
 
