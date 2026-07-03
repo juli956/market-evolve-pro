@@ -41,12 +41,13 @@ function loadLegacyIfNeeded(): { products: Product[]; sales: Sale[] } | null {
     const sales: Sale[] = rawS ? JSON.parse(rawS) : [];
     // Normalizar campos que quizá no existían
     const normProducts = products.map((p) => ({
-      history: [] as Product["history"],
-      createdAt: new Date().toISOString(),
+      ...p,
+      history: p.history ?? [],
+      createdAt: p.createdAt ?? new Date().toISOString(),
       controlStock: !!p.controlStock,
       stock: p.stock ?? 0,
-      ...p,
     }));
+
     localStorage.setItem(LEGACY_FLAG, "1");
     return { products: normProducts, sales };
   } catch {
