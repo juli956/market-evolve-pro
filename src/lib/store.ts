@@ -64,54 +64,65 @@ export const useStore = create<StoreState>()(
       sales: legacy?.sales ?? [],
 
       addProduct: (p) =>
-        set((s) => ({
-          products: [
-            ...s.products,
-            {
-              id: Date.now().toString(),
-              history: [],
-              createdAt: new Date().toISOString(),
-              ...p,
-            },
-          ],
-        })),
+        set((s) => {
+          const created: Product = {
+            id: (typeof crypto !== "undefined" && crypto.randomUUID) ? crypto.randomUUID() : Date.now().toString(),
+            history: [],
+            createdAt: new Date().toISOString(),
+            ...p,
+          };
+          import("./cloudSync").then((m) => m.pushProduct(created));
+          return { products: [...s.products, created] };
+        }),
 
       updateProduct: (id, patch) =>
-        set((s) => ({
-          products: s.products.map((p) => {
+        set((s) => {
+          let updated: Product | null = null;
+          const products = s.products.map((p) => {
             if (p.id !== id) return p;
-            // Si cambió el costo, empujamos historial.
             const history = [...(p.history ?? [])];
             if (patch.cost !== undefined && patch.cost !== p.cost) {
               history.push({ cost: p.cost, date: new Date().toISOString() });
             }
-            return { ...p, ...patch, history };
-          }),
-        })),
+            updated = { ...p, ...patch, history };
+            return updated;
+          });
+          if (updated) import("./cloudSync").then((m) => m.pushProduct(updated!));
+          return { products };
+        }),
 
       deleteProduct: (id) =>
-        set((s) => ({ products: s.products.filter((p) => p.id !== id) })),
+        set((s) => {
+          import("./cloudSync").then((m) => m.deleteProductRemote(id));
+          return { products: s.products.filter((p) => p.id !== id) };
+        }),
 
       addSale: (sale) =>
         set((s) => {
-          // Descontar stock si corresponde
           const products = s.products.map((p) => {
             if (!p.controlStock) return p;
             const it = sale.items.find((i) => i.productId === p.id);
             if (!it) return p;
             return { ...p, stock: (p.stock ?? 0) - it.qty };
           });
-          return {
-            products,
-            sales: [...s.sales, { id: Date.now().toString(), ...sale }],
+          const created: Sale = {
+            id: (typeof crypto !== "undefined" && crypto.randomUUID) ? crypto.randomUUID() : Date.now().toString(),
+            ...sale,
           };
+          import("./cloudSync").then((m) => {
+            m.pushSale(created);
+            // Also push any products whose stock changed
+            products.forEach((p, i) => {
+              if (p !== s.products[i]) m.pushProduct(p);
+            });
+          });
+          return { products, sales: [...s.sales, created] };
         }),
 
       updateSale: (id, next) =>
         set((s) => {
           const old = s.sales.find((x) => x.id === id);
           if (!old) return s;
-          // Ajuste de stock: revertir viejo, aplicar nuevo
           const products = s.products.map((p) => {
             if (!p.controlStock) return p;
             const wasIn = old.items.find((i) => i.productId === p.id);
@@ -119,9 +130,16 @@ export const useStore = create<StoreState>()(
             const delta = (wasIn?.qty ?? 0) - (isIn?.qty ?? 0);
             return delta === 0 ? p : { ...p, stock: (p.stock ?? 0) + delta };
           });
+          const merged = { ...next, id };
+          import("./cloudSync").then((m) => {
+            m.pushSale(merged);
+            products.forEach((p, i) => {
+              if (p !== s.products[i]) m.pushProduct(p);
+            });
+          });
           return {
             products,
-            sales: s.sales.map((x) => (x.id === id ? { ...next, id } : x)),
+            sales: s.sales.map((x) => (x.id === id ? merged : x)),
           };
         }),
 
@@ -135,6 +153,12 @@ export const useStore = create<StoreState>()(
             if (!it) return p;
             return { ...p, stock: (p.stock ?? 0) + it.qty };
           });
+          import("./cloudSync").then((m) => {
+            m.deleteSaleRemote(id);
+            products.forEach((p, i) => {
+              if (p !== s.products[i]) m.pushProduct(p);
+            });
+          });
           return { products, sales: s.sales.filter((x) => x.id !== id) };
         }),
 
@@ -147,3 +171,4 @@ export const useStore = create<StoreState>()(
     },
   ),
 );
+

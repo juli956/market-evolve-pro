@@ -157,8 +157,10 @@ export async function pushAllLocal(userId: string) {
 
   const { error: e1 } = await supabase
     .from("products")
-    .upsert(fixedProducts.map(productToRow));
-  const { error: e2 } = await supabase.from("sales").upsert(fixedSales.map(saleToRow));
+    .upsert(fixedProducts.map(productToRow) as never);
+  const { error: e2 } = await supabase
+    .from("sales")
+    .upsert(fixedSales.map(saleToRow) as never);
   if (e1 || e2) toast.error("No se pudieron subir todos los datos locales");
 }
 
@@ -168,7 +170,7 @@ export function pushProduct(p: Product) {
   if (!currentUserId || applyingRemote) return;
   supabase
     .from("products")
-    .upsert(productToRow(p))
+    .upsert(productToRow(p) as never)
     .then(({ error }) => {
       if (error) toast.error("Error al guardar producto: " + error.message);
     });
@@ -189,7 +191,7 @@ export function pushSale(s: Sale) {
   if (!currentUserId || applyingRemote) return;
   supabase
     .from("sales")
-    .upsert(saleToRow(s))
+    .upsert(saleToRow(s) as never)
     .then(({ error }) => {
       if (error) toast.error("Error al guardar venta: " + error.message);
     });
@@ -205,3 +207,4 @@ export function deleteSaleRemote(id: string) {
       if (error) toast.error("Error al eliminar venta: " + error.message);
     });
 }
+

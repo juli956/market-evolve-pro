@@ -120,13 +120,57 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  const router = useRouter();
+
+  useEffect(() => {
+    let cancelled = false;
+    let mode: "browser" = "browser";
+    void mode;
+    // Sync inicial + suscripción
+    (async () => {
+      const { supabase } = await import("@/integrations/supabase/client");
+      const { pullAll, pushAllLocal, setSyncUser } = await import("@/lib/cloudSync");
+      const { data } = await supabase.auth.getSession();
+      const user = data.session?.user;
+      if (user && !cancelled) {
+        // Si hay datos locales sin sincronizar (por primer login), subirlos.
+        const flagKey = "gp_cloud_synced_v1_" + user.id;
+        if (!localStorage.getItem(flagKey)) {
+          await pushAllLocal(user.id);
+          localStorage.setItem(flagKey, "1");
+        }
+        await pullAll(user.id);
+      }
+      const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
+        if (event !== "SIGNED_IN" && event !== "SIGNED_OUT" && event !== "USER_UPDATED") return;
+        if (event === "SIGNED_OUT") {
+          setSyncUser(null);
+        } else if (session?.user) {
+          const u = session.user;
+          const flagKey = "gp_cloud_synced_v1_" + u.id;
+          (async () => {
+            if (!localStorage.getItem(flagKey)) {
+              await pushAllLocal(u.id);
+              localStorage.setItem(flagKey, "1");
+            }
+            await pullAll(u.id);
+          })();
+        }
+        router.invalidate();
+      });
+      if (cancelled) sub.subscription.unsubscribe();
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [router]);
 
   return (
     <QueryClientProvider client={queryClient}>
-      {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
       <Outlet />
       <Toaster position="top-right" richColors />
     </QueryClientProvider>
   );
 }
+
 
