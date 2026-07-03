@@ -7,7 +7,7 @@ import { History } from "@/components/app/History";
 import { Metrics } from "@/components/app/Metrics";
 import { BackupPanel } from "@/components/app/BackupPanel";
 
-export const Route = createFileRoute("/")({
+export const Route = createFileRoute("/_authenticated/")({
   ssr: false,
   head: () => ({
     meta: [
