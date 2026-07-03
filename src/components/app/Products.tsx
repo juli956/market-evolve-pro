@@ -272,7 +272,7 @@ function ProductFormInner({
               type="button"
               variant="secondary"
               className="w-full"
-              onClick={() => onOpenChange(false)}
+              onClick={onCancel}
             >
               Cancelar
             </Button>
@@ -284,7 +284,7 @@ function ProductFormInner({
             </Button>
           </DialogFooter>
         </form>
-      </DialogContent>
-    </Dialog>
+    </>
   );
 }
+
