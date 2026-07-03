@@ -1,24 +1,79 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useState } from "react";
+import { Dashboard } from "@/components/app/Dashboard";
+import { NewSale } from "@/components/app/NewSale";
+import { Products } from "@/components/app/Products";
+import { History } from "@/components/app/History";
+import { Metrics } from "@/components/app/Metrics";
+import { BackupPanel } from "@/components/app/BackupPanel";
 
-// No head() here: the home route inherits title/description/og/twitter from
-// __root.tsx, and ships no og:image so serve-time hosting can inject the
-// project's social preview (explicit og:image or latest screenshot).
 export const Route = createFileRoute("/")({
-  component: Index,
+  head: () => ({
+    meta: [
+      { title: "Gestor de Ventas Pro" },
+      {
+        name: "description",
+        content:
+          "Controlá tus ventas, ganancias, stock, clientes y proveedores desde la PC o el celular.",
+      },
+    ],
+  }),
+  component: HomePage,
 });
 
-// IMPORTANT: Replace this placeholder. See ./README.md for routing conventions.
-function Index() {
+type Tab = "dashboard" | "sales" | "products" | "history" | "metrics" | "backup";
+
+const TABS: { id: Tab; label: string }[] = [
+  { id: "dashboard", label: "Dashboard" },
+  { id: "sales", label: "Nueva Venta" },
+  { id: "products", label: "Productos" },
+  { id: "history", label: "Historial" },
+  { id: "metrics", label: "Métricas" },
+  { id: "backup", label: "Respaldos" },
+];
+
+function HomePage() {
+  const [tab, setTab] = useState<Tab>("dashboard");
+
   return (
-    <div
-      className="flex min-h-screen items-center justify-center"
-      style={{ backgroundColor: "#fcfbf8" }}
-    >
-      <img
-        data-lovable-blank-page-placeholder="REMOVE_THIS"
-        src="https://cdn.gpteng.co/blank-app-v1.svg"
-        alt="Your app will live here!"
-      />
+    <div className="min-h-screen bg-background p-3 sm:p-5">
+      <div className="mx-auto max-w-6xl overflow-hidden rounded-xl bg-popover shadow-lg ring-1 ring-border">
+        <header className="bg-header px-5 py-4 text-header-foreground">
+          <h1 className="flex items-center gap-2 text-xl font-bold sm:text-2xl">
+            📊 Gestor de Ventas Pro
+          </h1>
+          <p className="mt-1 text-sm opacity-80">
+            Controlá tus ventas, ganancias y stock
+          </p>
+        </header>
+
+        <nav className="flex flex-wrap gap-[2px] bg-nav">
+          {TABS.map((t) => {
+            const active = tab === t.id;
+            return (
+              <button
+                key={t.id}
+                onClick={() => setTab(t.id)}
+                className={
+                  "min-w-max flex-1 px-4 py-3 text-sm font-medium text-nav-foreground transition-colors " +
+                  (active ? "bg-nav-active" : "bg-nav hover:bg-nav-active/70")
+                }
+              >
+                {t.label}
+              </button>
+            );
+          })}
+        </nav>
+
+        <main className="p-4 sm:p-6">
+          {tab === "dashboard" && <Dashboard />}
+          {tab === "sales" && <NewSale />}
+          {tab === "products" && <Products />}
+          {tab === "history" && <History />}
+          {tab === "metrics" && <Metrics />}
+          {tab === "backup" && <BackupPanel />}
+        </main>
+      </div>
     </div>
   );
 }
