@@ -179,57 +179,42 @@ function ProductForm({
     controlStock: boolean;
   }) => void;
 }) {
-  const [name, setName] = useState("");
-  const [provider, setProvider] = useState("");
-  const [cost, setCost] = useState<string>("");
-  const [stock, setStock] = useState<string>("0");
-  const [controlStock, setControlStock] = useState(false);
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent key={product?.id ?? "new"}>
+        <ProductFormInner product={product} onCancel={() => onOpenChange(false)} onSave={onSave} />
+      </DialogContent>
+    </Dialog>
+  );
+}
 
-  // Sincronizar al abrir
-  const key = (product?.id ?? "new") + String(open);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  useState(() => {
-    if (product) {
-      setName(product.name);
-      setProvider(product.provider ?? "");
-      setCost(String(product.cost));
-      setStock(String(product.stock ?? 0));
-      setControlStock(!!product.controlStock);
-    } else {
-      setName("");
-      setProvider("");
-      setCost("");
-      setStock("0");
-      setControlStock(false);
-    }
-  });
+function ProductFormInner({
+  product,
+  onSave,
+  onCancel,
+}: {
+  product: Product | null;
+  onCancel: () => void;
+  onSave: (data: {
+    name: string;
+    provider: string;
+    cost: number;
+    stock: number;
+    controlStock: boolean;
+  }) => void;
+}) {
+  const [name, setName] = useState(product?.name ?? "");
+  const [provider, setProvider] = useState(product?.provider ?? "");
+  const [cost, setCost] = useState<string>(product ? String(product.cost) : "");
+  const [stock, setStock] = useState<string>(String(product?.stock ?? 0));
+  const [controlStock, setControlStock] = useState(!!product?.controlStock);
 
   return (
-    <Dialog
-      open={open}
-      onOpenChange={(o) => {
-        onOpenChange(o);
-        if (o) {
-          if (product) {
-            setName(product.name);
-            setProvider(product.provider ?? "");
-            setCost(String(product.cost));
-            setStock(String(product.stock ?? 0));
-            setControlStock(!!product.controlStock);
-          } else {
-            setName("");
-            setProvider("");
-            setCost("");
-            setStock("0");
-            setControlStock(false);
-          }
-        }
-      }}
-    >
-      <DialogContent key={key}>
-        <DialogHeader>
-          <DialogTitle>{product ? "Editar Producto" : "Nuevo Producto"}</DialogTitle>
-        </DialogHeader>
+    <>
+      <DialogHeader>
+        <DialogTitle>{product ? "Editar Producto" : "Nuevo Producto"}</DialogTitle>
+      </DialogHeader>
+
         <form
           onSubmit={(e) => {
             e.preventDefault();
