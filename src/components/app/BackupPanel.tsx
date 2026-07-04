@@ -131,7 +131,12 @@ export function BackupPanel() {
             <AlertDialogAction
               onClick={() => {
                 if (pending) {
-                  replaceAll({ products: pending.products, sales: pending.sales });
+                  replaceAll({
+                    products: pending.products,
+                    sales: pending.sales,
+                    clients: pending.clients ?? [],
+                    providers: pending.providers ?? [],
+                  });
                   toast.success("Respaldo restaurado");
                 }
                 setPending(null);
