@@ -64,7 +64,7 @@ export function BackupPanel() {
           <Button
             className="bg-success text-success-foreground hover:opacity-90"
             onClick={() => {
-              downloadBackup(products, sales);
+              downloadBackup(products, sales, clients, providers);
               toast.success("Respaldo descargado");
             }}
           >
