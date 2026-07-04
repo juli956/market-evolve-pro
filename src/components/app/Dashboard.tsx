@@ -4,118 +4,377 @@ import { Button } from "@/components/ui/button";
 import { useStore } from "@/lib/store";
 import { getLocalDateString, currencyShort, computeMargin } from "@/lib/utils-app";
 import { exportSalesExcel, exportMonthlySummary, exportSalesCSV } from "@/lib/exports";
+import {
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  CartesianGrid,
+  LineChart,
+  Line,
+  PieChart,
+  Pie,
+  Cell,
+  Legend,
+} from "recharts";
+import type { Sale } from "@/lib/types";
 
 const DAY_NAMES = ["Dom", "Lun", "Mar", "Mie", "Jue", "Vie", "Sab"];
+const PIE_COLORS = [
+  "hsl(221 83% 53%)",
+  "hsl(160 84% 39%)",
+  "hsl(38 92% 50%)",
+  "hsl(199 89% 48%)",
+  "hsl(280 68% 60%)",
+  "hsl(340 82% 55%)",
+];
+
+function sumTotal(list: Sale[]) {
+  return list.reduce((a, s) => a + s.total, 0);
+}
+function sumProfit(list: Sale[]) {
+  return list.reduce((a, s) => a + s.profit, 0);
+}
+function pctDelta(curr: number, prev: number): number | null {
+  if (prev === 0) return curr === 0 ? 0 : null;
+  return ((curr - prev) / prev) * 100;
+}
 
 export function Dashboard() {
   const sales = useStore((s) => s.sales);
+  const products = useStore((s) => s.products);
 
   const today = getLocalDateString();
-  const todaySales = useMemo(() => sales.filter((s) => s.date === today), [sales, today]);
+  const yesterday = useMemo(() => {
+    const d = new Date();
+    d.setDate(d.getDate() - 1);
+    return getLocalDateString(d);
+  }, []);
 
-  const total = todaySales.reduce((a, s) => a + s.total, 0);
-  const profit = todaySales.reduce((a, s) => a + s.profit, 0);
+  const todaySales = useMemo(() => sales.filter((s) => s.date === today), [sales, today]);
+  const yesterdaySales = useMemo(() => sales.filter((s) => s.date === yesterday), [sales, yesterday]);
+
+  const total = sumTotal(todaySales);
+  const profit = sumProfit(todaySales);
   const margin = computeMargin(total, profit);
 
+  const totalYesterday = sumTotal(yesterdaySales);
+  const profitYesterday = sumProfit(yesterdaySales);
+  const dTotal = pctDelta(total, totalYesterday);
+  const dProfit = pctDelta(profit, profitYesterday);
+
+  // ---- KPI mensual vs mes anterior
+  const monthCompare = useMemo(() => {
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = now.getMonth();
+    const inMonth = (s: Sale, yy: number, mm: number) => {
+      const [sy, sm] = s.date.split("-").map(Number);
+      return sy === yy && sm === mm + 1;
+    };
+    const currList = sales.filter((s) => inMonth(s, y, m));
+    const prevY = m === 0 ? y - 1 : y;
+    const prevM = m === 0 ? 11 : m - 1;
+    const prevList = sales.filter((s) => inMonth(s, prevY, prevM));
+    return {
+      currTotal: sumTotal(currList),
+      currProfit: sumProfit(currList),
+      prevTotal: sumTotal(prevList),
+      prevProfit: sumProfit(prevList),
+      count: currList.length,
+    };
+  }, [sales]);
+
+  const dMonthTotal = pctDelta(monthCompare.currTotal, monthCompare.prevTotal);
+  const dMonthProfit = pctDelta(monthCompare.currProfit, monthCompare.prevProfit);
+
+  // ---- Ventas de la semana (chart)
   const weekData = useMemo(() => {
-    const days: { date: string; label: string; isToday: boolean; value: number }[] = [];
+    const days: { date: string; label: string; ventas: number; ganancia: number }[] = [];
     for (let i = 6; i >= 0; i--) {
       const d = new Date();
       d.setDate(d.getDate() - i);
       const date = getLocalDateString(d);
-      const value = sales.filter((s) => s.date === date).reduce((a, s) => a + s.total, 0);
-      days.push({ date, label: DAY_NAMES[d.getDay()], isToday: i === 0, value });
+      const daySales = sales.filter((s) => s.date === date);
+      days.push({
+        date,
+        label: DAY_NAMES[d.getDay()],
+        ventas: sumTotal(daySales),
+        ganancia: sumProfit(daySales),
+      });
     }
     return days;
   }, [sales]);
 
-  const maxWeek = Math.max(100, ...weekData.map((d) => d.value));
+  // ---- Últimos 30 días (line)
+  const monthTrend = useMemo(() => {
+    const arr: { date: string; label: string; ventas: number }[] = [];
+    for (let i = 29; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      const date = getLocalDateString(d);
+      arr.push({
+        date,
+        label: String(d.getDate()).padStart(2, "0"),
+        ventas: sumTotal(sales.filter((s) => s.date === date)),
+      });
+    }
+    return arr;
+  }, [sales]);
 
-  const topProductsToday = useMemo(() => {
-    const count: Record<string, number> = {};
-    todaySales.forEach((s) =>
-      s.items.forEach((i) => {
-        count[i.name] = (count[i.name] ?? 0) + i.qty;
-      }),
-    );
-    return Object.entries(count)
-      .sort((a, b) => b[1] - a[1])
+  // ---- Top productos del mes
+  const topProductsMonth = useMemo(() => {
+    const now = new Date();
+    const prefix = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+    const acc: Record<string, { qty: number; profit: number }> = {};
+    sales
+      .filter((s) => s.date.startsWith(prefix))
+      .forEach((s) =>
+        s.items.forEach((i) => {
+          if (!acc[i.name]) acc[i.name] = { qty: 0, profit: 0 };
+          acc[i.name].qty += i.qty;
+          acc[i.name].profit += i.profit;
+        }),
+      );
+    return Object.entries(acc)
+      .map(([name, v]) => ({ name, ...v }))
+      .sort((a, b) => b.profit - a.profit)
       .slice(0, 5);
-  }, [todaySales]);
+  }, [sales]);
+
+  // ---- Top clientes del mes
+  const topClientsMonth = useMemo(() => {
+    const now = new Date();
+    const prefix = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+    const acc: Record<string, { total: number; count: number }> = {};
+    sales
+      .filter((s) => s.date.startsWith(prefix))
+      .forEach((s) => {
+        const c = (s.client || "Sin cliente").trim() || "Sin cliente";
+        if (!acc[c]) acc[c] = { total: 0, count: 0 };
+        acc[c].total += s.total;
+        acc[c].count += 1;
+      });
+    return Object.entries(acc)
+      .map(([name, v]) => ({ name, ...v }))
+      .sort((a, b) => b.total - a.total)
+      .slice(0, 5);
+  }, [sales]);
+
+  // ---- Métodos de pago del mes
+  const paymentBreakdown = useMemo(() => {
+    const now = new Date();
+    const prefix = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+    const acc: Record<string, number> = {};
+    sales
+      .filter((s) => s.date.startsWith(prefix))
+      .forEach((s) => {
+        const m = s.paymentMethod || "Sin especificar";
+        acc[m] = (acc[m] ?? 0) + s.total;
+      });
+    return Object.entries(acc).map(([name, value]) => ({ name, value }));
+  }, [sales]);
+
+  // ---- Alertas de stock bajo
+  const lowStock = useMemo(
+    () => products.filter((p) => p.controlStock && (p.stock ?? 0) <= 3),
+    [products],
+  );
 
   return (
     <div className="space-y-5">
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard label="Ventas Hoy" value={currencyShort(total)} accent="primary" />
         <StatCard
-          label="Ganancia Neta"
+          label="Ventas Hoy"
+          value={currencyShort(total)}
+          delta={dTotal}
+          accent="primary"
+        />
+        <StatCard
+          label="Ganancia Hoy"
           value={currencyShort(profit)}
+          delta={dProfit}
           accent="success"
           valueClass="text-success"
         />
+        <StatCard label="Margen Hoy" value={margin.toFixed(1) + "%"} accent="info" valueClass="text-info" />
+        <StatCard label="Transacciones Hoy" value={String(todaySales.length)} accent="warning" />
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <StatCard
-          label="Margen Promedio"
-          value={margin.toFixed(1) + "%"}
+          label="Mes Actual · Ventas"
+          value={currencyShort(monthCompare.currTotal)}
+          delta={dMonthTotal}
+          accent="primary"
+          hint={`vs mes anterior: ${currencyShort(monthCompare.prevTotal)}`}
+        />
+        <StatCard
+          label="Mes Actual · Ganancia"
+          value={currencyShort(monthCompare.currProfit)}
+          delta={dMonthProfit}
+          accent="success"
+          valueClass="text-success"
+          hint={`vs mes anterior: ${currencyShort(monthCompare.prevProfit)}`}
+        />
+        <StatCard
+          label="Mes Actual · Ticket prom."
+          value={
+            monthCompare.count > 0
+              ? currencyShort(monthCompare.currTotal / monthCompare.count)
+              : "$0"
+          }
           accent="info"
           valueClass="text-info"
+          hint={`${monthCompare.count} operaciones`}
         />
-        <StatCard label="Transacciones" value={String(todaySales.length)} accent="warning" />
+      </div>
+
+      {lowStock.length > 0 && (
+        <Card className="border-warning/40 bg-warning/10 p-4">
+          <h3 className="mb-2 font-semibold text-warning-foreground">
+            ⚠️ Stock bajo ({lowStock.length})
+          </h3>
+          <div className="flex flex-wrap gap-2">
+            {lowStock.map((p) => (
+              <span
+                key={p.id}
+                className="rounded-full bg-warning px-3 py-1 text-xs font-medium text-warning-foreground"
+              >
+                {p.name}: {p.stock} u.
+              </span>
+            ))}
+          </div>
+        </Card>
+      )}
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Card className="p-5">
+          <h3 className="mb-3 font-semibold">📈 Ventas de la Semana</h3>
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={weekData} margin={{ top: 8, right: 8, left: -12, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
+                <XAxis dataKey="label" tick={{ fontSize: 12 }} />
+                <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => currencyShort(Number(v))} />
+                <Tooltip
+                  formatter={(v: number, k) => [currencyShort(v), k === "ventas" ? "Ventas" : "Ganancia"]}
+                  contentStyle={{ borderRadius: 8, fontSize: 12 }}
+                />
+                <Bar dataKey="ventas" fill="hsl(221 83% 53%)" radius={[6, 6, 0, 0]} />
+                <Bar dataKey="ganancia" fill="hsl(160 84% 39%)" radius={[6, 6, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </Card>
+
+        <Card className="p-5">
+          <h3 className="mb-3 font-semibold">📅 Últimos 30 días</h3>
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={monthTrend} margin={{ top: 8, right: 8, left: -12, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
+                <XAxis dataKey="label" tick={{ fontSize: 10 }} interval={3} />
+                <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => currencyShort(Number(v))} />
+                <Tooltip
+                  formatter={(v: number) => [currencyShort(v), "Ventas"]}
+                  contentStyle={{ borderRadius: 8, fontSize: 12 }}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="ventas"
+                  stroke="hsl(221 83% 53%)"
+                  strokeWidth={2.5}
+                  dot={false}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </Card>
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-3">
+        <Card className="p-5 lg:col-span-2">
+          <h3 className="mb-3 font-semibold">🏆 Top Productos del Mes</h3>
+          {topProductsMonth.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Sin ventas este mes.</p>
+          ) : (
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  layout="vertical"
+                  data={topProductsMonth}
+                  margin={{ top: 4, right: 12, left: 12, bottom: 0 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" horizontal={false} />
+                  <XAxis type="number" tick={{ fontSize: 11 }} tickFormatter={(v) => currencyShort(Number(v))} />
+                  <YAxis type="category" dataKey="name" width={110} tick={{ fontSize: 12 }} />
+                  <Tooltip
+                    formatter={(v: number) => [currencyShort(v), "Ganancia"]}
+                    contentStyle={{ borderRadius: 8, fontSize: 12 }}
+                  />
+                  <Bar dataKey="profit" fill="hsl(160 84% 39%)" radius={[0, 6, 6, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+        </Card>
+
+        <Card className="p-5">
+          <h3 className="mb-3 font-semibold">💳 Métodos de Pago</h3>
+          {paymentBreakdown.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Sin datos este mes.</p>
+          ) : (
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={paymentBreakdown}
+                    dataKey="value"
+                    nameKey="name"
+                    innerRadius={45}
+                    outerRadius={80}
+                    paddingAngle={2}
+                  >
+                    {paymentBreakdown.map((_, i) => (
+                      <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    formatter={(v: number) => currencyShort(v)}
+                    contentStyle={{ borderRadius: 8, fontSize: 12 }}
+                  />
+                  <Legend wrapperStyle={{ fontSize: 11 }} />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+        </Card>
       </div>
 
       <Card className="p-5">
-        <h3 className="mb-3 font-semibold">📈 Ventas de la Semana</h3>
-        <div className="flex h-40 items-end gap-2 rounded-md bg-muted/60 p-5 pb-8 pt-6">
-          {weekData.map((d) => {
-            const h = Math.max(5, (d.value / maxWeek) * 100);
-            return (
-              <div
-                key={d.date}
-                className="relative flex-1 rounded-t"
-                style={{
-                  height: h + "%",
-                  minWidth: 30,
-                  background: d.isToday
-                    ? "linear-gradient(to top,var(--success),oklch(0.6 0.17 162))"
-                    : "linear-gradient(to top,var(--primary),var(--info))",
-                }}
-              >
-                <div className="absolute -top-6 left-1/2 -translate-x-1/2 whitespace-nowrap text-xs font-bold text-foreground">
-                  {d.value > 0 ? currencyShort(d.value) : ""}
-                </div>
-                <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-[10px] text-muted-foreground">
-                  {d.label}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </Card>
-
-      <Card className="p-5">
-        <h3 className="mb-3 font-semibold">🏆 Productos Más Vendidos Hoy</h3>
-        {topProductsToday.length === 0 ? (
-          <span className="text-muted-foreground">Sin ventas hoy</span>
+        <h3 className="mb-3 font-semibold">👥 Top Clientes del Mes</h3>
+        {topClientsMonth.length === 0 ? (
+          <p className="text-sm text-muted-foreground">Sin ventas este mes.</p>
         ) : (
-          <div className="flex flex-wrap gap-2">
-            {topProductsToday.map(([name, qty], i) => {
-              const colors = [
-                "var(--primary)",
-                "var(--info)",
-                "oklch(0.62 0.24 302)",
-                "oklch(0.66 0.26 342)",
-                "oklch(0.65 0.24 15)",
-              ];
-              return (
-                <span
-                  key={name}
-                  className="rounded-full px-4 py-1.5 text-sm font-medium text-primary-foreground"
-                  style={{ background: colors[i] }}
-                >
-                  {name}: {qty} u.
+          <ul className="divide-y divide-border">
+            {topClientsMonth.map((c, i) => (
+              <li key={c.name} className="flex items-center justify-between py-2 text-sm">
+                <span className="flex items-center gap-3">
+                  <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
+                    {i + 1}
+                  </span>
+                  <strong>{c.name}</strong>
+                  <span className="text-xs text-muted-foreground">
+                    {c.count} {c.count === 1 ? "venta" : "ventas"}
+                  </span>
                 </span>
-              );
-            })}
-          </div>
+                <span className="font-semibold text-success">{currencyShort(c.total)}</span>
+              </li>
+            ))}
+          </ul>
         )}
       </Card>
 
@@ -149,11 +408,15 @@ export function Dashboard() {
 function StatCard({
   label,
   value,
+  delta,
+  hint,
   accent,
   valueClass,
 }: {
   label: string;
   value: string;
+  delta?: number | null;
+  hint?: string;
   accent: "primary" | "success" | "info" | "warning";
   valueClass?: string;
 }) {
@@ -163,10 +426,31 @@ function StatCard({
     info: "border-l-info",
     warning: "border-l-warning",
   }[accent];
+
+  let deltaEl: React.ReactNode = null;
+  if (delta !== undefined && delta !== null) {
+    const up = delta >= 0;
+    deltaEl = (
+      <span
+        className={`ml-2 rounded px-1.5 py-0.5 text-xs font-semibold ${
+          up ? "bg-success/15 text-success" : "bg-destructive/15 text-destructive"
+        }`}
+      >
+        {up ? "▲" : "▼"} {Math.abs(delta).toFixed(0)}%
+      </span>
+    );
+  } else if (delta === null) {
+    deltaEl = <span className="ml-2 text-xs text-muted-foreground">–</span>;
+  }
+
   return (
     <div className={`rounded-md border border-border border-l-4 bg-popover p-4 shadow-sm ${border}`}>
       <div className="text-xs uppercase tracking-wide text-muted-foreground">{label}</div>
-      <div className={`mt-1 text-3xl font-bold ${valueClass ?? ""}`}>{value}</div>
+      <div className="mt-1 flex items-baseline">
+        <span className={`text-3xl font-bold ${valueClass ?? ""}`}>{value}</span>
+        {deltaEl}
+      </div>
+      {hint && <div className="mt-1 text-[11px] text-muted-foreground">{hint}</div>}
     </div>
   );
 }
