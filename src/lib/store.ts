@@ -3,11 +3,13 @@
 
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
-import type { Product, Sale } from "./types";
+import type { Product, Sale, Client, Provider } from "./types";
 
 interface StoreState {
   products: Product[];
   sales: Sale[];
+  clients: Client[];
+  providers: Provider[];
   // acciones
   addProduct: (p: Omit<Product, "id" | "history" | "createdAt">) => void;
   updateProduct: (id: string, patch: Partial<Product>) => void;
@@ -15,7 +17,18 @@ interface StoreState {
   addSale: (s: Omit<Sale, "id">) => void;
   updateSale: (id: string, next: Sale) => void;
   deleteSale: (id: string) => void;
-  replaceAll: (data: { products: Product[]; sales: Sale[] }) => void;
+  addClient: (c: Omit<Client, "id" | "createdAt">) => void;
+  updateClient: (id: string, patch: Partial<Client>) => void;
+  deleteClient: (id: string) => void;
+  addProvider: (p: Omit<Provider, "id" | "createdAt">) => void;
+  updateProvider: (id: string, patch: Partial<Provider>) => void;
+  deleteProvider: (id: string) => void;
+  replaceAll: (data: {
+    products: Product[];
+    sales: Sale[];
+    clients?: Client[];
+    providers?: Provider[];
+  }) => void;
 }
 
 const STORAGE_KEY = "gestor-ventas:v1";
