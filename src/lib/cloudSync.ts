@@ -5,7 +5,7 @@
 // un pull no vuelvan a rebotar al servidor.
 
 import { supabase } from "@/integrations/supabase/client";
-import type { Product, Sale } from "./types";
+import type { Product, Sale, Client, Provider } from "./types";
 import { useStore } from "./store";
 import { toast } from "sonner";
 
