@@ -67,14 +67,19 @@ interface AutoEntry {
   payload: BackupPayload;
 }
 
-export function runAutoBackup(products: Product[], sales: Sale[]) {
+export function runAutoBackup(
+  products: Product[],
+  sales: Sale[],
+  clients: Client[] = [],
+  providers: Provider[] = [],
+) {
   if (typeof window === "undefined") return;
   try {
     const today = getLocalDateString();
     const raw = localStorage.getItem(AUTO_KEY);
     const list: AutoEntry[] = raw ? JSON.parse(raw) : [];
     if (list.some((e) => e.date === today)) return;
-    list.push({ date: today, payload: buildBackup(products, sales) });
+    list.push({ date: today, payload: buildBackup(products, sales, clients, providers) });
     while (list.length > MAX_AUTO) list.shift();
     localStorage.setItem(AUTO_KEY, JSON.stringify(list));
   } catch {
