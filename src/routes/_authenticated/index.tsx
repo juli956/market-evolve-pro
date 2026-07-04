@@ -28,7 +28,7 @@ export const Route = createFileRoute("/_authenticated/")({
 });
 
 
-type Tab = "dashboard" | "sales" | "products" | "history" | "metrics" | "backup";
+type Tab = "dashboard" | "sales" | "products" | "history" | "metrics" | "clients" | "providers" | "backup";
 
 const TABS: { id: Tab; label: string }[] = [
   { id: "dashboard", label: "Dashboard" },
@@ -36,6 +36,8 @@ const TABS: { id: Tab; label: string }[] = [
   { id: "products", label: "Productos" },
   { id: "history", label: "Historial" },
   { id: "metrics", label: "Métricas" },
+  { id: "clients", label: "Clientes" },
+  { id: "providers", label: "Proveedores" },
   { id: "backup", label: "Respaldos" },
 ];
 
