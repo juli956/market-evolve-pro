@@ -247,3 +247,28 @@ export function deleteSaleRemote(id: string) {
     });
 }
 
+
+export function pushClient(c: Client) {
+  if (!currentUserId || applyingRemote) return;
+  supabase.from("clients").upsert(contactToRow(c) as never).then(({ error }) => {
+    if (error) toast.error("Error al guardar cliente: " + error.message);
+  });
+}
+export function deleteClientRemote(id: string) {
+  if (!currentUserId || applyingRemote) return;
+  supabase.from("clients").delete().eq("id", id).then(({ error }) => {
+    if (error) toast.error("Error al eliminar cliente: " + error.message);
+  });
+}
+export function pushProvider(p: Provider) {
+  if (!currentUserId || applyingRemote) return;
+  supabase.from("providers").upsert(contactToRow(p) as never).then(({ error }) => {
+    if (error) toast.error("Error al guardar proveedor: " + error.message);
+  });
+}
+export function deleteProviderRemote(id: string) {
+  if (!currentUserId || applyingRemote) return;
+  supabase.from("providers").delete().eq("id", id).then(({ error }) => {
+    if (error) toast.error("Error al eliminar proveedor: " + error.message);
+  });
+}
