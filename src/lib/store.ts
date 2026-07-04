@@ -177,7 +177,66 @@ export const useStore = create<StoreState>()(
           return { products, sales: s.sales.filter((x) => x.id !== id) };
         }),
 
-      replaceAll: ({ products, sales }) => set({ products, sales }),
+      addClient: (c) =>
+        set((s) => {
+          const created: Client = {
+            id: crypto.randomUUID?.() ?? Date.now().toString(),
+            createdAt: new Date().toISOString(),
+            ...c,
+          };
+          import("./cloudSync").then((m) => m.pushClient(created));
+          return { clients: [...s.clients, created] };
+        }),
+      updateClient: (id, patch) =>
+        set((s) => {
+          let updated: Client | null = null;
+          const clients = s.clients.map((c) => {
+            if (c.id !== id) return c;
+            updated = { ...c, ...patch };
+            return updated;
+          });
+          if (updated) import("./cloudSync").then((m) => m.pushClient(updated!));
+          return { clients };
+        }),
+      deleteClient: (id) =>
+        set((s) => {
+          import("./cloudSync").then((m) => m.deleteClientRemote(id));
+          return { clients: s.clients.filter((c) => c.id !== id) };
+        }),
+      addProvider: (p) =>
+        set((s) => {
+          const created: Provider = {
+            id: crypto.randomUUID?.() ?? Date.now().toString(),
+            createdAt: new Date().toISOString(),
+            ...p,
+          };
+          import("./cloudSync").then((m) => m.pushProvider(created));
+          return { providers: [...s.providers, created] };
+        }),
+      updateProvider: (id, patch) =>
+        set((s) => {
+          let updated: Provider | null = null;
+          const providers = s.providers.map((p) => {
+            if (p.id !== id) return p;
+            updated = { ...p, ...patch };
+            return updated;
+          });
+          if (updated) import("./cloudSync").then((m) => m.pushProvider(updated!));
+          return { providers };
+        }),
+      deleteProvider: (id) =>
+        set((s) => {
+          import("./cloudSync").then((m) => m.deleteProviderRemote(id));
+          return { providers: s.providers.filter((p) => p.id !== id) };
+        }),
+
+      replaceAll: ({ products, sales, clients, providers }) =>
+        set((s) => ({
+          products,
+          sales,
+          clients: clients ?? s.clients,
+          providers: providers ?? s.providers,
+        })),
     }),
     {
       name: STORAGE_KEY,
