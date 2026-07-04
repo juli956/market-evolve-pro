@@ -37,9 +37,23 @@ export interface Sale {
   paymentMethod?: string;
 }
 
+export interface Contact {
+  id: string;
+  name: string;
+  phone?: string;
+  email?: string;
+  notes?: string;
+  createdAt: string;
+}
+
+export type Client = Contact;
+export type Provider = Contact;
+
 export interface BackupPayload {
   version: number;
   createdAt: string;
   products: Product[];
   sales: Sale[];
+  clients?: Client[];
+  providers?: Provider[];
 }
