@@ -6,6 +6,7 @@ import { Products } from "@/components/app/Products";
 import { History } from "@/components/app/History";
 import { Metrics } from "@/components/app/Metrics";
 import { BackupPanel } from "@/components/app/BackupPanel";
+import { Contacts } from "@/components/app/Contacts";
 import { supabase } from "@/integrations/supabase/client";
 import { setSyncUser } from "@/lib/cloudSync";
 import { toast } from "sonner";
