@@ -105,6 +105,8 @@ function HomePage() {
           {tab === "products" && <Products />}
           {tab === "history" && <History />}
           {tab === "metrics" && <Metrics />}
+          {tab === "clients" && <Contacts kind="client" />}
+          {tab === "providers" && <Contacts kind="provider" />}
           {tab === "backup" && <BackupPanel />}
         </main>
       </div>
