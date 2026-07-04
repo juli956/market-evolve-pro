@@ -3,24 +3,36 @@
 // - restoreBackup: valida y devuelve el payload.
 // - autoBackup: snapshot diario en localStorage (últimos 7 días).
 
-import type { BackupPayload, Product, Sale } from "./types";
+import type { BackupPayload, Product, Sale, Client, Provider } from "./types";
 import { getLocalDateString } from "./utils-app";
 
 export const BACKUP_VERSION = 1;
 const AUTO_KEY = "gestor-ventas:auto-backups";
 const MAX_AUTO = 7;
 
-export function buildBackup(products: Product[], sales: Sale[]): BackupPayload {
+export function buildBackup(
+  products: Product[],
+  sales: Sale[],
+  clients: Client[] = [],
+  providers: Provider[] = [],
+): BackupPayload {
   return {
     version: BACKUP_VERSION,
     createdAt: new Date().toISOString(),
     products,
     sales,
+    clients,
+    providers,
   };
 }
 
-export function downloadBackup(products: Product[], sales: Sale[]) {
-  const payload = buildBackup(products, sales);
+export function downloadBackup(
+  products: Product[],
+  sales: Sale[],
+  clients: Client[] = [],
+  providers: Provider[] = [],
+) {
+  const payload = buildBackup(products, sales, clients, providers);
   const blob = new Blob([JSON.stringify(payload, null, 2)], {
     type: "application/json",
   });
