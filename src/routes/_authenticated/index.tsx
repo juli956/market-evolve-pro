@@ -6,6 +6,7 @@ import { Products } from "@/components/app/Products";
 import { History } from "@/components/app/History";
 import { Metrics } from "@/components/app/Metrics";
 import { BackupPanel } from "@/components/app/BackupPanel";
+import { Contacts } from "@/components/app/Contacts";
 import { supabase } from "@/integrations/supabase/client";
 import { setSyncUser } from "@/lib/cloudSync";
 import { toast } from "sonner";
@@ -27,7 +28,7 @@ export const Route = createFileRoute("/_authenticated/")({
 });
 
 
-type Tab = "dashboard" | "sales" | "products" | "history" | "metrics" | "backup";
+type Tab = "dashboard" | "sales" | "products" | "history" | "metrics" | "clients" | "providers" | "backup";
 
 const TABS: { id: Tab; label: string }[] = [
   { id: "dashboard", label: "Dashboard" },
@@ -35,6 +36,8 @@ const TABS: { id: Tab; label: string }[] = [
   { id: "products", label: "Productos" },
   { id: "history", label: "Historial" },
   { id: "metrics", label: "Métricas" },
+  { id: "clients", label: "Clientes" },
+  { id: "providers", label: "Proveedores" },
   { id: "backup", label: "Respaldos" },
 ];
 
@@ -102,6 +105,8 @@ function HomePage() {
           {tab === "products" && <Products />}
           {tab === "history" && <History />}
           {tab === "metrics" && <Metrics />}
+          {tab === "clients" && <Contacts kind="client" />}
+          {tab === "providers" && <Contacts kind="provider" />}
           {tab === "backup" && <BackupPanel />}
         </main>
       </div>

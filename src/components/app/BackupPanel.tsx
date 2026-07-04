@@ -26,6 +26,8 @@ import { formatDate } from "@/lib/utils-app";
 export function BackupPanel() {
   const products = useStore((s) => s.products);
   const sales = useStore((s) => s.sales);
+  const clients = useStore((s) => s.clients);
+  const providers = useStore((s) => s.providers);
   const replaceAll = useStore((s) => s.replaceAll);
 
   const [pending, setPending] = useState<BackupPayload | null>(null);
@@ -34,9 +36,9 @@ export function BackupPanel() {
 
   // Respaldo automático diario (idempotente).
   useEffect(() => {
-    runAutoBackup(products, sales);
+    runAutoBackup(products, sales, clients, providers);
     setAutos(listAutoBackups());
-  }, [products, sales]);
+  }, [products, sales, clients, providers]);
 
   async function onPickFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -62,7 +64,7 @@ export function BackupPanel() {
           <Button
             className="bg-success text-success-foreground hover:opacity-90"
             onClick={() => {
-              downloadBackup(products, sales);
+              downloadBackup(products, sales, clients, providers);
               toast.success("Respaldo descargado");
             }}
           >
@@ -129,7 +131,12 @@ export function BackupPanel() {
             <AlertDialogAction
               onClick={() => {
                 if (pending) {
-                  replaceAll({ products: pending.products, sales: pending.sales });
+                  replaceAll({
+                    products: pending.products,
+                    sales: pending.sales,
+                    clients: pending.clients ?? [],
+                    providers: pending.providers ?? [],
+                  });
                   toast.success("Respaldo restaurado");
                 }
                 setPending(null);

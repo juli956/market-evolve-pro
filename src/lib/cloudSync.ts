@@ -5,7 +5,7 @@
 // un pull no vuelvan a rebotar al servidor.
 
 import { supabase } from "@/integrations/supabase/client";
-import type { Product, Sale } from "./types";
+import type { Product, Sale, Client, Provider } from "./types";
 import { useStore } from "./store";
 import { toast } from "sonner";
 
@@ -111,13 +111,50 @@ function ensureUuid(id: string): string {
 
 // ---------- Pull ----------
 
+type ContactRow = {
+  id: string;
+  name: string;
+  phone: string | null;
+  email: string | null;
+  notes: string | null;
+  created_at: string;
+};
+function rowToContact(r: ContactRow): Client {
+  return {
+    id: r.id,
+    name: r.name,
+    phone: r.phone ?? undefined,
+    email: r.email ?? undefined,
+    notes: r.notes ?? undefined,
+    createdAt: r.created_at,
+  };
+}
+function contactToRow(c: Client) {
+  return {
+    id: c.id,
+    user_id: currentUserId!,
+    name: c.name,
+    phone: c.phone ?? null,
+    email: c.email ?? null,
+    notes: c.notes ?? null,
+    created_at: c.createdAt,
+  };
+}
+
 export async function pullAll(userId: string) {
   currentUserId = userId;
-  const [{ data: prods, error: eP }, { data: sales, error: eS }] = await Promise.all([
+  const [
+    { data: prods, error: eP },
+    { data: sales, error: eS },
+    { data: clients, error: eC },
+    { data: providers, error: eV },
+  ] = await Promise.all([
     supabase.from("products").select("*").eq("user_id", userId),
     supabase.from("sales").select("*").eq("user_id", userId),
+    supabase.from("clients").select("*").eq("user_id", userId),
+    supabase.from("providers").select("*").eq("user_id", userId),
   ]);
-  if (eP || eS) {
+  if (eP || eS || eC || eV) {
     toast.error("No se pudieron leer los datos de la nube");
     return;
   }
@@ -126,6 +163,8 @@ export async function pullAll(userId: string) {
     useStore.getState().replaceAll({
       products: (prods ?? []).map((r) => rowToProduct(r as ProductRow)),
       sales: (sales ?? []).map((r) => rowToSale(r as SaleRow)),
+      clients: (clients ?? []).map((r) => rowToContact(r as ContactRow)),
+      providers: (providers ?? []).map((r) => rowToContact(r as ContactRow)),
     });
   } finally {
     applyingRemote = false;
@@ -208,3 +247,28 @@ export function deleteSaleRemote(id: string) {
     });
 }
 
+
+export function pushClient(c: Client) {
+  if (!currentUserId || applyingRemote) return;
+  supabase.from("clients").upsert(contactToRow(c) as never).then(({ error }) => {
+    if (error) toast.error("Error al guardar cliente: " + error.message);
+  });
+}
+export function deleteClientRemote(id: string) {
+  if (!currentUserId || applyingRemote) return;
+  supabase.from("clients").delete().eq("id", id).then(({ error }) => {
+    if (error) toast.error("Error al eliminar cliente: " + error.message);
+  });
+}
+export function pushProvider(p: Provider) {
+  if (!currentUserId || applyingRemote) return;
+  supabase.from("providers").upsert(contactToRow(p) as never).then(({ error }) => {
+    if (error) toast.error("Error al guardar proveedor: " + error.message);
+  });
+}
+export function deleteProviderRemote(id: string) {
+  if (!currentUserId || applyingRemote) return;
+  supabase.from("providers").delete().eq("id", id).then(({ error }) => {
+    if (error) toast.error("Error al eliminar proveedor: " + error.message);
+  });
+}

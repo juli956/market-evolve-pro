@@ -3,11 +3,13 @@
 
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
-import type { Product, Sale } from "./types";
+import type { Product, Sale, Client, Provider } from "./types";
 
 interface StoreState {
   products: Product[];
   sales: Sale[];
+  clients: Client[];
+  providers: Provider[];
   // acciones
   addProduct: (p: Omit<Product, "id" | "history" | "createdAt">) => void;
   updateProduct: (id: string, patch: Partial<Product>) => void;
@@ -15,7 +17,18 @@ interface StoreState {
   addSale: (s: Omit<Sale, "id">) => void;
   updateSale: (id: string, next: Sale) => void;
   deleteSale: (id: string) => void;
-  replaceAll: (data: { products: Product[]; sales: Sale[] }) => void;
+  addClient: (c: Omit<Client, "id" | "createdAt">) => void;
+  updateClient: (id: string, patch: Partial<Client>) => void;
+  deleteClient: (id: string) => void;
+  addProvider: (p: Omit<Provider, "id" | "createdAt">) => void;
+  updateProvider: (id: string, patch: Partial<Provider>) => void;
+  deleteProvider: (id: string) => void;
+  replaceAll: (data: {
+    products: Product[];
+    sales: Sale[];
+    clients?: Client[];
+    providers?: Provider[];
+  }) => void;
 }
 
 const STORAGE_KEY = "gestor-ventas:v1";
@@ -62,6 +75,8 @@ export const useStore = create<StoreState>()(
     (set) => ({
       products: legacy?.products ?? [],
       sales: legacy?.sales ?? [],
+      clients: [],
+      providers: [],
 
       addProduct: (p) =>
         set((s) => {
@@ -162,7 +177,66 @@ export const useStore = create<StoreState>()(
           return { products, sales: s.sales.filter((x) => x.id !== id) };
         }),
 
-      replaceAll: ({ products, sales }) => set({ products, sales }),
+      addClient: (c) =>
+        set((s) => {
+          const created: Client = {
+            id: crypto.randomUUID?.() ?? Date.now().toString(),
+            createdAt: new Date().toISOString(),
+            ...c,
+          };
+          import("./cloudSync").then((m) => m.pushClient(created));
+          return { clients: [...s.clients, created] };
+        }),
+      updateClient: (id, patch) =>
+        set((s) => {
+          let updated: Client | null = null;
+          const clients = s.clients.map((c) => {
+            if (c.id !== id) return c;
+            updated = { ...c, ...patch };
+            return updated;
+          });
+          if (updated) import("./cloudSync").then((m) => m.pushClient(updated!));
+          return { clients };
+        }),
+      deleteClient: (id) =>
+        set((s) => {
+          import("./cloudSync").then((m) => m.deleteClientRemote(id));
+          return { clients: s.clients.filter((c) => c.id !== id) };
+        }),
+      addProvider: (p) =>
+        set((s) => {
+          const created: Provider = {
+            id: crypto.randomUUID?.() ?? Date.now().toString(),
+            createdAt: new Date().toISOString(),
+            ...p,
+          };
+          import("./cloudSync").then((m) => m.pushProvider(created));
+          return { providers: [...s.providers, created] };
+        }),
+      updateProvider: (id, patch) =>
+        set((s) => {
+          let updated: Provider | null = null;
+          const providers = s.providers.map((p) => {
+            if (p.id !== id) return p;
+            updated = { ...p, ...patch };
+            return updated;
+          });
+          if (updated) import("./cloudSync").then((m) => m.pushProvider(updated!));
+          return { providers };
+        }),
+      deleteProvider: (id) =>
+        set((s) => {
+          import("./cloudSync").then((m) => m.deleteProviderRemote(id));
+          return { providers: s.providers.filter((p) => p.id !== id) };
+        }),
+
+      replaceAll: ({ products, sales, clients, providers }) =>
+        set((s) => ({
+          products,
+          sales,
+          clients: clients ?? s.clients,
+          providers: providers ?? s.providers,
+        })),
     }),
     {
       name: STORAGE_KEY,
