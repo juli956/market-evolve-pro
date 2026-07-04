@@ -75,6 +75,8 @@ export const useStore = create<StoreState>()(
     (set) => ({
       products: legacy?.products ?? [],
       sales: legacy?.sales ?? [],
+      clients: [],
+      providers: [],
 
       addProduct: (p) =>
         set((s) => {
