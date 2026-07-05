@@ -105,9 +105,13 @@ export function NewSale() {
       total: finalItems.reduce((a, i) => a + i.price * i.qty, 0),
       profit: finalItems.reduce((a, i) => a + i.profit, 0),
     });
+    // Auto-guardar cliente nuevo en la lista si no existe.
+    const known = clients.some((x) => x.name.trim().toLowerCase() === c.toLowerCase());
+    if (!known) addClient({ name: c });
     toast.success("Venta guardada");
     clear();
   }
+
 
   return (
     <div className="space-y-5">
