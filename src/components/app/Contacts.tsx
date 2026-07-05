@@ -140,7 +140,11 @@ export function Contacts({ kind }: Props) {
             const key = c.name.trim().toLowerCase();
             const st = stats[key];
             return (
-              <Card key={c.id} className="p-4">
+              <Card
+                key={c.id}
+                className="cursor-pointer p-4 transition-colors hover:bg-muted/40"
+                onClick={() => setViewing(c)}
+              >
                 <div className="flex items-start justify-between gap-2">
                   <div>
                     <div className="font-semibold">{c.name}</div>
@@ -151,7 +155,14 @@ export function Contacts({ kind }: Props) {
                       <div className="text-xs text-muted-foreground">✉️ {c.email}</div>
                     )}
                   </div>
-                  <div className="flex gap-1">
+                  <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
+                    <button
+                      onClick={() => setViewing(c)}
+                      className="rounded px-2 py-1 text-xs text-primary hover:bg-primary/10"
+                      title="Ver detalle"
+                    >
+                      👁
+                    </button>
                     <button
                       onClick={() => setEditing(c)}
                       className="rounded px-2 py-1 text-xs text-info hover:bg-info/10"
@@ -183,7 +194,7 @@ export function Contacts({ kind }: Props) {
                     </span>
                     {(st as { last?: string }).last && (
                       <span className="text-muted-foreground">
-                        últ. {(st as { last?: string }).last}
+                        últ. {formatDate((st as { last?: string }).last)}
                       </span>
                     )}
                   </div>
@@ -195,6 +206,7 @@ export function Contacts({ kind }: Props) {
                   </div>
                 )}
               </Card>
+
             );
           })}
         </div>
