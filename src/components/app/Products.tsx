@@ -216,10 +216,12 @@ function ProductForm({
 
 function ProductFormInner({
   product,
+  providers,
   onSave,
   onCancel,
 }: {
   product: Product | null;
+  providers: string[];
   onCancel: () => void;
   onSave: (data: {
     name: string;
@@ -229,6 +231,7 @@ function ProductFormInner({
     controlStock: boolean;
   }) => void;
 }) {
+
   const [name, setName] = useState(product?.name ?? "");
   const [provider, setProvider] = useState(product?.provider ?? "");
   const [cost, setCost] = useState<string>(product ? String(product.cost) : "");
