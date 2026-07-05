@@ -183,11 +183,13 @@ export function Products() {
 function ProductForm({
   open,
   product,
+  providers,
   onOpenChange,
   onSave,
 }: {
   open: boolean;
   product: Product | null;
+  providers: string[];
   onOpenChange: (o: boolean) => void;
   onSave: (data: {
     name: string;
@@ -200,11 +202,17 @@ function ProductForm({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent key={product?.id ?? "new"}>
-        <ProductFormInner product={product} onCancel={() => onOpenChange(false)} onSave={onSave} />
+        <ProductFormInner
+          product={product}
+          providers={providers}
+          onCancel={() => onOpenChange(false)}
+          onSave={onSave}
+        />
       </DialogContent>
     </Dialog>
   );
 }
+
 
 function ProductFormInner({
   product,
