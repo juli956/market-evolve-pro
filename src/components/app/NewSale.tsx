@@ -124,8 +124,16 @@ export function NewSale() {
               value={client}
               onChange={(e) => setClient(e.target.value)}
               placeholder="Nombre del cliente"
+              list="clients-datalist"
+              autoComplete="off"
             />
+            <datalist id="clients-datalist">
+              {clients.map((c) => (
+                <option key={c.id} value={c.name} />
+              ))}
+            </datalist>
           </div>
+
           <div>
             <Label>Fecha</Label>
             <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
