@@ -223,6 +223,19 @@ export function Contacts({ kind }: Props) {
         onSubmit={submit}
       />
 
+      <ContactDetailDialog
+        contact={viewing}
+        kind={kind}
+        sales={sales}
+        products={products}
+        onOpenChange={(o) => !o && setViewing(null)}
+        onEdit={(c) => {
+          setViewing(null);
+          setEditing(c);
+        }}
+      />
+
+
       <AlertDialog open={!!toDelete} onOpenChange={(o) => !o && setToDelete(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
