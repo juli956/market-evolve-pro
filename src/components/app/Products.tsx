@@ -265,8 +265,20 @@ function ProductFormInner({
           </div>
           <div>
             <Label>Proveedor</Label>
-            <Input value={provider} onChange={(e) => setProvider(e.target.value)} />
+            <Input
+              value={provider}
+              onChange={(e) => setProvider(e.target.value)}
+              list="providers-datalist"
+              autoComplete="off"
+              placeholder="Elegí uno o escribí uno nuevo"
+            />
+            <datalist id="providers-datalist">
+              {providers.map((p) => (
+                <option key={p} value={p} />
+              ))}
+            </datalist>
           </div>
+
           <div className="grid gap-3 sm:grid-cols-2">
             <div>
               <Label>Costo *</Label>
