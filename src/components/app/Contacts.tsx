@@ -45,6 +45,8 @@ export function Contacts({ kind }: Props) {
   const [editing, setEditing] = useState<Client | Provider | null>(null);
   const [creating, setCreating] = useState(false);
   const [toDelete, setToDelete] = useState<Client | Provider | null>(null);
+  const [viewing, setViewing] = useState<Client | Provider | null>(null);
+
 
   const stats = useMemo(() => {
     // Para clientes: total y cantidad de ventas por nombre.
