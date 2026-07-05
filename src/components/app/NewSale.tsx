@@ -28,13 +28,16 @@ function emptyItem(): DraftItem {
 
 export function NewSale() {
   const products = useStore((s) => s.products);
+  const clients = useStore((s) => s.clients);
   const addSale = useStore((s) => s.addSale);
+  const addClient = useStore((s) => s.addClient);
 
   const [client, setClient] = useState("");
   const [date, setDate] = useState(getLocalDateString());
   const [items, setItems] = useState<DraftItem[]>([]);
 
   const productMap = useMemo(() => new Map(products.map((p) => [p.id, p])), [products]);
+
 
   const { total, profit } = useMemo(() => {
     let t = 0;
@@ -102,9 +105,13 @@ export function NewSale() {
       total: finalItems.reduce((a, i) => a + i.price * i.qty, 0),
       profit: finalItems.reduce((a, i) => a + i.profit, 0),
     });
+    // Auto-guardar cliente nuevo en la lista si no existe.
+    const known = clients.some((x) => x.name.trim().toLowerCase() === c.toLowerCase());
+    if (!known) addClient({ name: c });
     toast.success("Venta guardada");
     clear();
   }
+
 
   return (
     <div className="space-y-5">
@@ -117,8 +124,16 @@ export function NewSale() {
               value={client}
               onChange={(e) => setClient(e.target.value)}
               placeholder="Nombre del cliente"
+              list="clients-datalist"
+              autoComplete="off"
             />
+            <datalist id="clients-datalist">
+              {clients.map((c) => (
+                <option key={c.id} value={c.name} />
+              ))}
+            </datalist>
           </div>
+
           <div>
             <Label>Fecha</Label>
             <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} />

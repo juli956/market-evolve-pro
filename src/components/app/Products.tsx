@@ -37,13 +37,39 @@ import { currency } from "@/lib/utils-app";
 
 export function Products() {
   const products = useStore((s) => s.products);
+  const providers = useStore((s) => s.providers);
   const addProduct = useStore((s) => s.addProduct);
   const updateProduct = useStore((s) => s.updateProduct);
   const deleteProduct = useStore((s) => s.deleteProduct);
+  const addProvider = useStore((s) => s.addProvider);
 
   const [editing, setEditing] = useState<Product | null>(null);
   const [creating, setCreating] = useState(false);
   const [pendingDelete, setPendingDelete] = useState<Product | null>(null);
+
+  function persist(data: {
+    name: string;
+    provider: string;
+    cost: number;
+    stock: number;
+    controlStock: boolean;
+  }) {
+    if (editing) {
+      updateProduct(editing.id, data);
+      toast.success("Producto actualizado");
+    } else {
+      addProduct(data);
+      toast.success("Producto creado");
+    }
+    // Registrar proveedor si es nuevo.
+    const prov = data.provider.trim();
+    if (prov && !providers.some((p) => p.name.trim().toLowerCase() === prov.toLowerCase())) {
+      addProvider({ name: prov });
+    }
+    setEditing(null);
+    setCreating(false);
+  }
+
 
   function stockBadge(p: Product) {
     if (!p.controlStock) return <span className="text-muted-foreground">-</span>;
@@ -110,24 +136,16 @@ export function Products() {
       <ProductForm
         open={creating || !!editing}
         product={editing}
+        providers={providers.map((p) => p.name)}
         onOpenChange={(o) => {
           if (!o) {
             setEditing(null);
             setCreating(false);
           }
         }}
-        onSave={(data) => {
-          if (editing) {
-            updateProduct(editing.id, data);
-            toast.success("Producto actualizado");
-          } else {
-            addProduct(data);
-            toast.success("Producto creado");
-          }
-          setEditing(null);
-          setCreating(false);
-        }}
+        onSave={persist}
       />
+
 
       <AlertDialog
         open={!!pendingDelete}
@@ -165,11 +183,13 @@ export function Products() {
 function ProductForm({
   open,
   product,
+  providers,
   onOpenChange,
   onSave,
 }: {
   open: boolean;
   product: Product | null;
+  providers: string[];
   onOpenChange: (o: boolean) => void;
   onSave: (data: {
     name: string;
@@ -182,18 +202,26 @@ function ProductForm({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent key={product?.id ?? "new"}>
-        <ProductFormInner product={product} onCancel={() => onOpenChange(false)} onSave={onSave} />
+        <ProductFormInner
+          product={product}
+          providers={providers}
+          onCancel={() => onOpenChange(false)}
+          onSave={onSave}
+        />
       </DialogContent>
     </Dialog>
   );
 }
 
+
 function ProductFormInner({
   product,
+  providers,
   onSave,
   onCancel,
 }: {
   product: Product | null;
+  providers: string[];
   onCancel: () => void;
   onSave: (data: {
     name: string;
@@ -203,6 +231,7 @@ function ProductFormInner({
     controlStock: boolean;
   }) => void;
 }) {
+
   const [name, setName] = useState(product?.name ?? "");
   const [provider, setProvider] = useState(product?.provider ?? "");
   const [cost, setCost] = useState<string>(product ? String(product.cost) : "");
@@ -236,8 +265,20 @@ function ProductFormInner({
           </div>
           <div>
             <Label>Proveedor</Label>
-            <Input value={provider} onChange={(e) => setProvider(e.target.value)} />
+            <Input
+              value={provider}
+              onChange={(e) => setProvider(e.target.value)}
+              list="providers-datalist"
+              autoComplete="off"
+              placeholder="Elegí uno o escribí uno nuevo"
+            />
+            <datalist id="providers-datalist">
+              {providers.map((p) => (
+                <option key={p} value={p} />
+              ))}
+            </datalist>
           </div>
+
           <div className="grid gap-3 sm:grid-cols-2">
             <div>
               <Label>Costo *</Label>
