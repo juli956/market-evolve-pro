@@ -21,9 +21,10 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useStore } from "@/lib/store";
-import type { Client, Provider } from "@/lib/types";
-import { currencyShort } from "@/lib/utils-app";
+import type { Client, Provider, Sale, Product } from "@/lib/types";
+import { currency, currencyShort, formatDate } from "@/lib/utils-app";
 import { toast } from "sonner";
+
 
 type Kind = "client" | "provider";
 
