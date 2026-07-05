@@ -28,13 +28,16 @@ function emptyItem(): DraftItem {
 
 export function NewSale() {
   const products = useStore((s) => s.products);
+  const clients = useStore((s) => s.clients);
   const addSale = useStore((s) => s.addSale);
+  const addClient = useStore((s) => s.addClient);
 
   const [client, setClient] = useState("");
   const [date, setDate] = useState(getLocalDateString());
   const [items, setItems] = useState<DraftItem[]>([]);
 
   const productMap = useMemo(() => new Map(products.map((p) => [p.id, p])), [products]);
+
 
   const { total, profit } = useMemo(() => {
     let t = 0;
