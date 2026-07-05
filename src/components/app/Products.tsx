@@ -37,13 +37,39 @@ import { currency } from "@/lib/utils-app";
 
 export function Products() {
   const products = useStore((s) => s.products);
+  const providers = useStore((s) => s.providers);
   const addProduct = useStore((s) => s.addProduct);
   const updateProduct = useStore((s) => s.updateProduct);
   const deleteProduct = useStore((s) => s.deleteProduct);
+  const addProvider = useStore((s) => s.addProvider);
 
   const [editing, setEditing] = useState<Product | null>(null);
   const [creating, setCreating] = useState(false);
   const [pendingDelete, setPendingDelete] = useState<Product | null>(null);
+
+  function persist(data: {
+    name: string;
+    provider: string;
+    cost: number;
+    stock: number;
+    controlStock: boolean;
+  }) {
+    if (editing) {
+      updateProduct(editing.id, data);
+      toast.success("Producto actualizado");
+    } else {
+      addProduct(data);
+      toast.success("Producto creado");
+    }
+    // Registrar proveedor si es nuevo.
+    const prov = data.provider.trim();
+    if (prov && !providers.some((p) => p.name.trim().toLowerCase() === prov.toLowerCase())) {
+      addProvider({ name: prov });
+    }
+    setEditing(null);
+    setCreating(false);
+  }
+
 
   function stockBadge(p: Product) {
     if (!p.controlStock) return <span className="text-muted-foreground">-</span>;
