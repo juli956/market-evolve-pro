@@ -136,24 +136,16 @@ export function Products() {
       <ProductForm
         open={creating || !!editing}
         product={editing}
+        providers={providers.map((p) => p.name)}
         onOpenChange={(o) => {
           if (!o) {
             setEditing(null);
             setCreating(false);
           }
         }}
-        onSave={(data) => {
-          if (editing) {
-            updateProduct(editing.id, data);
-            toast.success("Producto actualizado");
-          } else {
-            addProduct(data);
-            toast.success("Producto creado");
-          }
-          setEditing(null);
-          setCreating(false);
-        }}
+        onSave={persist}
       />
+
 
       <AlertDialog
         open={!!pendingDelete}
