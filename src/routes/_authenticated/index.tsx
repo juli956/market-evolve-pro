@@ -13,6 +13,7 @@ import {
   Moon,
   Sun,
   User as UserIcon,
+  Keyboard,
   type LucideIcon,
 } from "lucide-react";
 import { Dashboard } from "@/components/app/Dashboard";
@@ -25,7 +26,15 @@ import { Contacts } from "@/components/app/Contacts";
 import { supabase } from "@/integrations/supabase/client";
 import { setSyncUser } from "@/lib/cloudSync";
 import { useTheme } from "@/hooks/use-theme";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { toast } from "sonner";
+
 
 export const Route = createFileRoute("/_authenticated/")({
   ssr: false,
@@ -66,11 +75,44 @@ const TABS: { id: Tab; label: string; Icon: LucideIcon }[] = [
 function HomePage() {
   const [tab, setTab] = useState<Tab>("dashboard");
   const [email, setEmail] = useState<string>("");
+  const [helpOpen, setHelpOpen] = useState(false);
   const navigate = useNavigate();
   const { theme, toggle } = useTheme();
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => setEmail(data.user?.email ?? ""));
+  }, []);
+
+  // Atajos de teclado: Alt+1..8 cambia de pestaña, "?" abre ayuda.
+  useEffect(() => {
+    function isTyping(t: EventTarget | null): boolean {
+      if (!(t instanceof HTMLElement)) return false;
+      const tag = t.tagName;
+      return (
+        tag === "INPUT" ||
+        tag === "TEXTAREA" ||
+        tag === "SELECT" ||
+        t.isContentEditable
+      );
+    }
+    function onKey(e: KeyboardEvent) {
+      if (isTyping(e.target)) return;
+      if (e.altKey && !e.ctrlKey && !e.metaKey && /^[1-8]$/.test(e.key)) {
+        const idx = parseInt(e.key, 10) - 1;
+        const t = TABS[idx];
+        if (t) {
+          e.preventDefault();
+          setTab(t.id);
+        }
+        return;
+      }
+      if (!e.altKey && !e.ctrlKey && !e.metaKey && (e.key === "?" || (e.shiftKey && e.key === "/"))) {
+        e.preventDefault();
+        setHelpOpen((v) => !v);
+      }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
   }, []);
 
   async function signOut() {
@@ -79,6 +121,7 @@ function HomePage() {
     toast.success("Sesión cerrada");
     navigate({ to: "/auth", replace: true });
   }
+
 
   return (
     <div className="min-h-screen bg-background p-3 sm:p-5">
@@ -110,6 +153,22 @@ function HomePage() {
                 {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
               </button>
               <button
+                onClick={toggle}
+                aria-label="Cambiar tema"
+                title={theme === "dark" ? "Modo claro" : "Modo oscuro"}
+                className="inline-flex h-8 w-8 items-center justify-center rounded-md bg-white/10 text-white transition-colors hover:bg-white/20"
+              >
+                {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+              </button>
+              <button
+                onClick={() => setHelpOpen(true)}
+                aria-label="Atajos de teclado"
+                title="Atajos de teclado (?)"
+                className="inline-flex h-8 w-8 items-center justify-center rounded-md bg-white/10 text-white transition-colors hover:bg-white/20"
+              >
+                <Keyboard className="h-4 w-4" />
+              </button>
+              <button
                 onClick={signOut}
                 className="inline-flex items-center gap-1.5 rounded-md bg-white/10 px-3 py-1.5 font-medium text-white transition-colors hover:bg-white/20"
               >
@@ -121,12 +180,13 @@ function HomePage() {
         </header>
 
         <nav className="flex flex-wrap gap-[2px] bg-nav">
-          {TABS.map(({ id, label, Icon }) => {
+          {TABS.map(({ id, label, Icon }, i) => {
             const active = tab === id;
             return (
               <button
                 key={id}
                 onClick={() => setTab(id)}
+                title={`${label} (Alt+${i + 1})`}
                 className={
                   "inline-flex min-w-max flex-1 items-center justify-center gap-1.5 px-4 py-3 text-sm font-medium text-nav-foreground transition-colors " +
                   (active ? "bg-nav-active" : "bg-nav hover:bg-nav-active/70")
@@ -150,6 +210,44 @@ function HomePage() {
           {tab === "backup" && <BackupPanel />}
         </main>
       </div>
+
+      <Dialog open={helpOpen} onOpenChange={setHelpOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Keyboard className="h-5 w-5" />
+              Atajos de teclado
+            </DialogTitle>
+            <DialogDescription>
+              Navegá más rápido entre las secciones.
+            </DialogDescription>
+          </DialogHeader>
+          <ul className="divide-y divide-border text-sm">
+            {TABS.map((t, i) => (
+              <li key={t.id} className="flex items-center justify-between py-2">
+                <span className="flex items-center gap-2">
+                  <t.Icon className="h-4 w-4 text-muted-foreground" />
+                  {t.label}
+                </span>
+                <Kbd>Alt + {i + 1}</Kbd>
+              </li>
+            ))}
+            <li className="flex items-center justify-between py-2">
+              <span>Mostrar / ocultar esta ayuda</span>
+              <Kbd>?</Kbd>
+            </li>
+          </ul>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
+
+function Kbd({ children }: { children: React.ReactNode }) {
+  return (
+    <kbd className="rounded border border-border bg-muted px-2 py-0.5 font-mono text-xs text-muted-foreground">
+      {children}
+    </kbd>
+  );
+}
+
