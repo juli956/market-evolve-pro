@@ -1,5 +1,20 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import {
+  BarChart3,
+  ShoppingCart,
+  Package,
+  History as HistoryIcon,
+  LineChart,
+  Users,
+  Truck,
+  DatabaseBackup,
+  LogOut,
+  Moon,
+  Sun,
+  User as UserIcon,
+  type LucideIcon,
+} from "lucide-react";
 import { Dashboard } from "@/components/app/Dashboard";
 import { NewSale } from "@/components/app/NewSale";
 import { Products } from "@/components/app/Products";
@@ -9,8 +24,8 @@ import { BackupPanel } from "@/components/app/BackupPanel";
 import { Contacts } from "@/components/app/Contacts";
 import { supabase } from "@/integrations/supabase/client";
 import { setSyncUser } from "@/lib/cloudSync";
+import { useTheme } from "@/hooks/use-theme";
 import { toast } from "sonner";
-
 
 export const Route = createFileRoute("/_authenticated/")({
   ssr: false,
@@ -27,24 +42,32 @@ export const Route = createFileRoute("/_authenticated/")({
   component: HomePage,
 });
 
+type Tab =
+  | "dashboard"
+  | "sales"
+  | "products"
+  | "history"
+  | "metrics"
+  | "clients"
+  | "providers"
+  | "backup";
 
-type Tab = "dashboard" | "sales" | "products" | "history" | "metrics" | "clients" | "providers" | "backup";
-
-const TABS: { id: Tab; label: string }[] = [
-  { id: "dashboard", label: "Dashboard" },
-  { id: "sales", label: "Nueva Venta" },
-  { id: "products", label: "Productos" },
-  { id: "history", label: "Historial" },
-  { id: "metrics", label: "Métricas" },
-  { id: "clients", label: "Clientes" },
-  { id: "providers", label: "Proveedores" },
-  { id: "backup", label: "Respaldos" },
+const TABS: { id: Tab; label: string; Icon: LucideIcon }[] = [
+  { id: "dashboard", label: "Dashboard", Icon: BarChart3 },
+  { id: "sales", label: "Nueva Venta", Icon: ShoppingCart },
+  { id: "products", label: "Productos", Icon: Package },
+  { id: "history", label: "Historial", Icon: HistoryIcon },
+  { id: "metrics", label: "Métricas", Icon: LineChart },
+  { id: "clients", label: "Clientes", Icon: Users },
+  { id: "providers", label: "Proveedores", Icon: Truck },
+  { id: "backup", label: "Respaldos", Icon: DatabaseBackup },
 ];
 
 function HomePage() {
   const [tab, setTab] = useState<Tab>("dashboard");
   const [email, setEmail] = useState<string>("");
   const navigate = useNavigate();
+  const { theme, toggle } = useTheme();
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => setEmail(data.user?.email ?? ""));
@@ -64,42 +87,59 @@ function HomePage() {
           <div className="flex flex-wrap items-start justify-between gap-2">
             <div>
               <h1 className="flex items-center gap-2 text-xl font-bold sm:text-2xl">
-                📊 Gestor de Ventas Pro
+                <BarChart3 className="h-6 w-6" />
+                Gestor de Ventas Pro
               </h1>
-              <p className="mt-1 text-sm opacity-80">Controlá tus ventas, ganancias y stock</p>
+              <p className="mt-1 text-sm opacity-80">
+                Controlá tus ventas, ganancias y stock
+              </p>
             </div>
-            <div className="flex items-center gap-3 text-xs opacity-90">
-              {email && <span>👤 {email}</span>}
+            <div className="flex items-center gap-2 text-xs opacity-90">
+              {email && (
+                <span className="hidden items-center gap-1.5 sm:inline-flex">
+                  <UserIcon className="h-3.5 w-3.5" />
+                  {email}
+                </span>
+              )}
+              <button
+                onClick={toggle}
+                aria-label="Cambiar tema"
+                title={theme === "dark" ? "Modo claro" : "Modo oscuro"}
+                className="inline-flex h-8 w-8 items-center justify-center rounded-md bg-white/10 text-white transition-colors hover:bg-white/20"
+              >
+                {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+              </button>
               <button
                 onClick={signOut}
-                className="rounded-md bg-white/10 px-3 py-1.5 font-medium text-white hover:bg-white/20"
+                className="inline-flex items-center gap-1.5 rounded-md bg-white/10 px-3 py-1.5 font-medium text-white transition-colors hover:bg-white/20"
               >
+                <LogOut className="h-3.5 w-3.5" />
                 Salir
               </button>
             </div>
           </div>
         </header>
 
-
         <nav className="flex flex-wrap gap-[2px] bg-nav">
-          {TABS.map((t) => {
-            const active = tab === t.id;
+          {TABS.map(({ id, label, Icon }) => {
+            const active = tab === id;
             return (
               <button
-                key={t.id}
-                onClick={() => setTab(t.id)}
+                key={id}
+                onClick={() => setTab(id)}
                 className={
-                  "min-w-max flex-1 px-4 py-3 text-sm font-medium text-nav-foreground transition-colors " +
+                  "inline-flex min-w-max flex-1 items-center justify-center gap-1.5 px-4 py-3 text-sm font-medium text-nav-foreground transition-colors " +
                   (active ? "bg-nav-active" : "bg-nav hover:bg-nav-active/70")
                 }
               >
-                {t.label}
+                <Icon className="h-4 w-4" />
+                {label}
               </button>
             );
           })}
         </nav>
 
-        <main className="p-4 sm:p-6">
+        <main key={tab} className="animate-in fade-in duration-300 p-4 sm:p-6">
           {tab === "dashboard" && <Dashboard />}
           {tab === "sales" && <NewSale />}
           {tab === "products" && <Products />}

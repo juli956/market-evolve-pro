@@ -1,4 +1,15 @@
 import { useMemo } from "react";
+import {
+  AlertTriangle,
+  TrendingUp,
+  CalendarDays,
+  Trophy,
+  CreditCard,
+  Users,
+  FileSpreadsheet,
+  FileText,
+  Save,
+} from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useStore } from "@/lib/store";
@@ -233,9 +244,10 @@ export function Dashboard() {
       </div>
 
       {lowStock.length > 0 && (
-        <Card className="border-warning/40 bg-warning/10 p-4">
-          <h3 className="mb-2 font-semibold text-warning-foreground">
-            ⚠️ Stock bajo ({lowStock.length})
+        <Card className="animate-in fade-in duration-300 border-warning/40 bg-warning/10 p-4">
+          <h3 className="mb-2 flex items-center gap-2 font-semibold text-warning-foreground">
+            <AlertTriangle className="h-4 w-4" />
+            Stock bajo ({lowStock.length})
           </h3>
           <div className="flex flex-wrap gap-2">
             {lowStock.map((p) => (
@@ -251,8 +263,11 @@ export function Dashboard() {
       )}
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <Card className="p-5">
-          <h3 className="mb-3 font-semibold">📈 Ventas de la Semana</h3>
+        <Card className="p-5 transition-shadow hover:shadow-md">
+          <h3 className="mb-3 flex items-center gap-2 font-semibold">
+            <TrendingUp className="h-4 w-4 text-primary" />
+            Ventas de la Semana
+          </h3>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={weekData} margin={{ top: 8, right: 8, left: -12, bottom: 0 }}>
@@ -270,8 +285,11 @@ export function Dashboard() {
           </div>
         </Card>
 
-        <Card className="p-5">
-          <h3 className="mb-3 font-semibold">📅 Últimos 30 días</h3>
+        <Card className="p-5 transition-shadow hover:shadow-md">
+          <h3 className="mb-3 flex items-center gap-2 font-semibold">
+            <CalendarDays className="h-4 w-4 text-primary" />
+            Últimos 30 días
+          </h3>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={monthTrend} margin={{ top: 8, right: 8, left: -12, bottom: 0 }}>
@@ -296,10 +314,13 @@ export function Dashboard() {
       </div>
 
       <div className="grid gap-4 lg:grid-cols-3">
-        <Card className="p-5 lg:col-span-2">
-          <h3 className="mb-3 font-semibold">🏆 Top Productos del Mes</h3>
+        <Card className="p-5 transition-shadow hover:shadow-md lg:col-span-2">
+          <h3 className="mb-3 flex items-center gap-2 font-semibold">
+            <Trophy className="h-4 w-4 text-warning" />
+            Top Productos del Mes
+          </h3>
           {topProductsMonth.length === 0 ? (
-            <p className="text-sm text-muted-foreground">Sin ventas este mes.</p>
+            <EmptyState message="Sin ventas este mes." />
           ) : (
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
@@ -322,10 +343,13 @@ export function Dashboard() {
           )}
         </Card>
 
-        <Card className="p-5">
-          <h3 className="mb-3 font-semibold">💳 Métodos de Pago</h3>
+        <Card className="p-5 transition-shadow hover:shadow-md">
+          <h3 className="mb-3 flex items-center gap-2 font-semibold">
+            <CreditCard className="h-4 w-4 text-info" />
+            Métodos de Pago
+          </h3>
           {paymentBreakdown.length === 0 ? (
-            <p className="text-sm text-muted-foreground">Sin datos este mes.</p>
+            <EmptyState message="Sin datos este mes." />
           ) : (
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
@@ -354,14 +378,20 @@ export function Dashboard() {
         </Card>
       </div>
 
-      <Card className="p-5">
-        <h3 className="mb-3 font-semibold">👥 Top Clientes del Mes</h3>
+      <Card className="p-5 transition-shadow hover:shadow-md">
+        <h3 className="mb-3 flex items-center gap-2 font-semibold">
+          <Users className="h-4 w-4 text-primary" />
+          Top Clientes del Mes
+        </h3>
         {topClientsMonth.length === 0 ? (
-          <p className="text-sm text-muted-foreground">Sin ventas este mes.</p>
+          <EmptyState message="Sin ventas este mes." />
         ) : (
           <ul className="divide-y divide-border">
             {topClientsMonth.map((c, i) => (
-              <li key={c.name} className="flex items-center justify-between py-2 text-sm">
+              <li
+                key={c.name}
+                className="flex items-center justify-between py-2 text-sm transition-colors hover:bg-muted/40"
+              >
                 <span className="flex items-center gap-3">
                   <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
                     {i + 1}
@@ -379,7 +409,10 @@ export function Dashboard() {
       </Card>
 
       <Card className="p-5">
-        <h3 className="mb-1 font-semibold">💾 Exportar Datos</h3>
+        <h3 className="mb-1 flex items-center gap-2 font-semibold">
+          <Save className="h-4 w-4 text-primary" />
+          Exportar Datos
+        </h3>
         <p className="mb-3 text-sm text-muted-foreground">
           Descargá tus datos para Excel o respaldo
         </p>
@@ -388,19 +421,30 @@ export function Dashboard() {
             className="bg-success text-success-foreground hover:opacity-90"
             onClick={() => exportSalesExcel(sales)}
           >
-            📊 Exportar Excel (Ventas Detalladas)
+            <FileSpreadsheet className="h-4 w-4" />
+            Exportar Excel (Ventas Detalladas)
           </Button>
           <Button
             className="bg-warning text-warning-foreground hover:opacity-90"
             onClick={() => exportMonthlySummary(sales)}
           >
-            📈 Exportar Resumen Mensual
+            <TrendingUp className="h-4 w-4" />
+            Exportar Resumen Mensual
           </Button>
           <Button variant="secondary" onClick={() => exportSalesCSV(sales)}>
-            📄 Exportar CSV Simple
+            <FileText className="h-4 w-4" />
+            Exportar CSV Simple
           </Button>
         </div>
       </Card>
+    </div>
+  );
+}
+
+function EmptyState({ message }: { message: string }) {
+  return (
+    <div className="flex h-24 items-center justify-center rounded-md border border-dashed border-border text-sm text-muted-foreground">
+      {message}
     </div>
   );
 }
