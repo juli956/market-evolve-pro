@@ -139,7 +139,7 @@ function HomePage() {
           })}
         </nav>
 
-        <main key={tab} className="animate-fade-in p-4 sm:p-6">
+        <main key={tab} className="animate-in fade-in duration-300 p-4 sm:p-6">
           {tab === "dashboard" && <Dashboard />}
           {tab === "sales" && <NewSale />}
           {tab === "products" && <Products />}

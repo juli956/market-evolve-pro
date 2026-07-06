@@ -244,7 +244,7 @@ export function Dashboard() {
       </div>
 
       {lowStock.length > 0 && (
-        <Card className="animate-fade-in border-warning/40 bg-warning/10 p-4">
+        <Card className="animate-in fade-in duration-300 border-warning/40 bg-warning/10 p-4">
           <h3 className="mb-2 flex items-center gap-2 font-semibold text-warning-foreground">
             <AlertTriangle className="h-4 w-4" />
             Stock bajo ({lowStock.length})
