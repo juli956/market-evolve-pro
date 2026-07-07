@@ -96,6 +96,12 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "apple-mobile-web-app-capable", content: "yes" },
       { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" },
       { name: "apple-mobile-web-app-title", content: "Ventas Pro" },
+      { name: "twitter:title", content: "Gestor de Ventas Pro" },
+      { name: "description", content: "Sistema de gestión de ventas: productos, stock, clientes, ganancias y respaldos." },
+      { property: "og:description", content: "Sistema de gestión de ventas: productos, stock, clientes, ganancias y respaldos." },
+      { name: "twitter:description", content: "Sistema de gestión de ventas: productos, stock, clientes, ganancias y respaldos." },
+      { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/2fec1add-127c-47b4-b489-0152be778c49" },
+      { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/2fec1add-127c-47b4-b489-0152be778c49" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
