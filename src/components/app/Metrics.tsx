@@ -177,14 +177,43 @@ export function Metrics() {
         Análisis Detallado
       </h3>
 
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         <PeriodBtn active={period === "day"} onClick={() => setPeriod("day")}>Hoy</PeriodBtn>
         <PeriodBtn active={period === "week"} onClick={() => setPeriod("week")}>Semana</PeriodBtn>
         <PeriodBtn active={period === "month"} onClick={() => setPeriod("month")}>Mes</PeriodBtn>
         <PeriodBtn active={period === "year"} onClick={() => setPeriod("year")}>Año</PeriodBtn>
         <PeriodBtn active={period === "all"} onClick={() => setPeriod("all")}>Todo</PeriodBtn>
+        <PeriodBtn active={period === "custom"} onClick={() => setPeriod("custom")}>Personalizado</PeriodBtn>
+        {period === "custom" && (
+          <div className="flex items-center gap-2 rounded-md border border-border bg-popover px-2 py-1">
+            <label className="flex items-center gap-1 text-xs text-muted-foreground">
+              Desde
+              <input
+                type="date"
+                value={customFrom}
+                max={customTo}
+                onChange={(e) => setCustomFrom(e.target.value)}
+                className="rounded border border-border bg-background px-2 py-1 text-xs"
+              />
+            </label>
+            <label className="flex items-center gap-1 text-xs text-muted-foreground">
+              Hasta
+              <input
+                type="date"
+                value={customTo}
+                min={customFrom}
+                onChange={(e) => setCustomTo(e.target.value)}
+                className="rounded border border-border bg-background px-2 py-1 text-xs"
+              />
+            </label>
+          </div>
+        )}
         <span className="ml-2 self-center text-xs text-muted-foreground">
-          {period === "all" ? "Histórico completo" : `Desde ${startDate}`}
+          {period === "all"
+            ? "Histórico completo"
+            : period === "custom"
+              ? `${startDate} → ${endDate}`
+              : `Desde ${startDate}`}
         </span>
       </div>
 
