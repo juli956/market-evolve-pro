@@ -37,16 +37,23 @@ import {
   computeMargin,
 } from "@/lib/utils-app";
 
-type Period = "day" | "week" | "month" | "year" | "all";
+type Period = "day" | "week" | "month" | "year" | "all" | "custom";
 
 export function Metrics() {
   const sales = useStore((s) => s.sales);
   const products = useStore((s) => s.products);
   const [period, setPeriod] = useState<Period>("month");
+  const [customFrom, setCustomFrom] = useState<string>(() => {
+    const d = new Date();
+    d.setDate(d.getDate() - 14);
+    return getLocalDateString(d);
+  });
+  const [customTo, setCustomTo] = useState<string>(() => getLocalDateString());
 
-  const { filtered, startDate } = useMemo(() => {
+  const { filtered, startDate, endDate } = useMemo(() => {
     const today = getLocalDateString();
     let start = "0000-01-01";
+    let end = today;
     const d = new Date();
     if (period === "day") start = today;
     else if (period === "week") {
@@ -57,12 +64,16 @@ export function Metrics() {
       start = getLocalDateString(d);
     } else if (period === "year") {
       start = `${d.getFullYear()}-01-01`;
+    } else if (period === "custom") {
+      start = customFrom;
+      end = customTo;
     }
     return {
-      filtered: sales.filter((s) => s.date >= start && s.date <= today),
+      filtered: sales.filter((s) => s.date >= start && s.date <= end),
       startDate: start,
+      endDate: end,
     };
-  }, [sales, period]);
+  }, [sales, period, customFrom, customTo]);
 
   const total = filtered.reduce((a, s) => a + s.total, 0);
   const profit = filtered.reduce((a, s) => a + s.profit, 0);
@@ -166,14 +177,43 @@ export function Metrics() {
         Análisis Detallado
       </h3>
 
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         <PeriodBtn active={period === "day"} onClick={() => setPeriod("day")}>Hoy</PeriodBtn>
         <PeriodBtn active={period === "week"} onClick={() => setPeriod("week")}>Semana</PeriodBtn>
         <PeriodBtn active={period === "month"} onClick={() => setPeriod("month")}>Mes</PeriodBtn>
         <PeriodBtn active={period === "year"} onClick={() => setPeriod("year")}>Año</PeriodBtn>
         <PeriodBtn active={period === "all"} onClick={() => setPeriod("all")}>Todo</PeriodBtn>
+        <PeriodBtn active={period === "custom"} onClick={() => setPeriod("custom")}>Personalizado</PeriodBtn>
+        {period === "custom" && (
+          <div className="flex items-center gap-2 rounded-md border border-border bg-popover px-2 py-1">
+            <label className="flex items-center gap-1 text-xs text-muted-foreground">
+              Desde
+              <input
+                type="date"
+                value={customFrom}
+                max={customTo}
+                onChange={(e) => setCustomFrom(e.target.value)}
+                className="rounded border border-border bg-background px-2 py-1 text-xs"
+              />
+            </label>
+            <label className="flex items-center gap-1 text-xs text-muted-foreground">
+              Hasta
+              <input
+                type="date"
+                value={customTo}
+                min={customFrom}
+                onChange={(e) => setCustomTo(e.target.value)}
+                className="rounded border border-border bg-background px-2 py-1 text-xs"
+              />
+            </label>
+          </div>
+        )}
         <span className="ml-2 self-center text-xs text-muted-foreground">
-          {period === "all" ? "Histórico completo" : `Desde ${startDate}`}
+          {period === "all"
+            ? "Histórico completo"
+            : period === "custom"
+              ? `${startDate} → ${endDate}`
+              : `Desde ${startDate}`}
         </span>
       </div>
 
