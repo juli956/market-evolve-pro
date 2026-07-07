@@ -37,16 +37,23 @@ import {
   computeMargin,
 } from "@/lib/utils-app";
 
-type Period = "day" | "week" | "month" | "year" | "all";
+type Period = "day" | "week" | "month" | "year" | "all" | "custom";
 
 export function Metrics() {
   const sales = useStore((s) => s.sales);
   const products = useStore((s) => s.products);
   const [period, setPeriod] = useState<Period>("month");
+  const [customFrom, setCustomFrom] = useState<string>(() => {
+    const d = new Date();
+    d.setDate(d.getDate() - 14);
+    return getLocalDateString(d);
+  });
+  const [customTo, setCustomTo] = useState<string>(() => getLocalDateString());
 
-  const { filtered, startDate } = useMemo(() => {
+  const { filtered, startDate, endDate } = useMemo(() => {
     const today = getLocalDateString();
     let start = "0000-01-01";
+    let end = today;
     const d = new Date();
     if (period === "day") start = today;
     else if (period === "week") {
@@ -57,12 +64,16 @@ export function Metrics() {
       start = getLocalDateString(d);
     } else if (period === "year") {
       start = `${d.getFullYear()}-01-01`;
+    } else if (period === "custom") {
+      start = customFrom;
+      end = customTo;
     }
     return {
-      filtered: sales.filter((s) => s.date >= start && s.date <= today),
+      filtered: sales.filter((s) => s.date >= start && s.date <= end),
       startDate: start,
+      endDate: end,
     };
-  }, [sales, period]);
+  }, [sales, period, customFrom, customTo]);
 
   const total = filtered.reduce((a, s) => a + s.total, 0);
   const profit = filtered.reduce((a, s) => a + s.profit, 0);

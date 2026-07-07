@@ -139,6 +139,9 @@ export function Contacts({ kind }: Props) {
           {filtered.map((c) => {
             const key = c.name.trim().toLowerCase();
             const st = stats[key];
+            const lastDate = kind === "client" ? (st as { last?: string } | undefined)?.last : undefined;
+            const inactiveDays = lastDate ? Math.floor((Date.now() - new Date(lastDate).getTime()) / 86400000) : null;
+            const isInactive = kind === "client" && inactiveDays !== null && inactiveDays > 60;
             return (
               <Card
                 key={c.id}
@@ -147,7 +150,17 @@ export function Contacts({ kind }: Props) {
               >
                 <div className="flex items-start justify-between gap-2">
                   <div>
-                    <div className="font-semibold">{c.name}</div>
+                    <div className="flex items-center gap-2 font-semibold">
+                      <span>{c.name}</span>
+                      {isInactive && (
+                        <span
+                          title={`Sin compras hace ${inactiveDays} días (última: ${formatDate(lastDate)})`}
+                          className="inline-flex items-center gap-1 rounded-full border border-warning/40 bg-warning/10 px-2 py-0.5 text-[10px] font-medium text-warning"
+                        >
+                          ⚠ Inactivo {inactiveDays}d
+                        </span>
+                      )}
+                    </div>
                     {c.phone && (
                       <div className="text-xs text-muted-foreground">📞 {c.phone}</div>
                     )}
