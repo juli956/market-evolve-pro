@@ -31,8 +31,15 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useStore } from "@/lib/store";
-import type { Product } from "@/lib/types";
+import type { Product, StockType, ProductionConfig } from "@/lib/types";
 import { currency } from "@/lib/utils-app";
 
 export function Products() {
@@ -53,6 +60,8 @@ export function Products() {
     cost: number;
     stock: number;
     controlStock: boolean;
+    stockType: StockType;
+    productionConfig?: ProductionConfig;
   }) {
     if (editing) {
       updateProduct(editing.id, data);
@@ -61,7 +70,6 @@ export function Products() {
       addProduct(data);
       toast.success("Producto creado");
     }
-    // Registrar proveedor si es nuevo.
     const prov = data.provider.trim();
     if (prov && !providers.some((p) => p.name.trim().toLowerCase() === prov.toLowerCase())) {
       addProvider({ name: prov });
@@ -180,6 +188,16 @@ export function Products() {
   );
 }
 
+type SaveData = {
+  name: string;
+  provider: string;
+  cost: number;
+  stock: number;
+  controlStock: boolean;
+  stockType: StockType;
+  productionConfig?: ProductionConfig;
+};
+
 function ProductForm({
   open,
   product,
@@ -191,13 +209,7 @@ function ProductForm({
   product: Product | null;
   providers: string[];
   onOpenChange: (o: boolean) => void;
-  onSave: (data: {
-    name: string;
-    provider: string;
-    cost: number;
-    stock: number;
-    controlStock: boolean;
-  }) => void;
+  onSave: (data: SaveData) => void;
 }) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -223,20 +235,16 @@ function ProductFormInner({
   product: Product | null;
   providers: string[];
   onCancel: () => void;
-  onSave: (data: {
-    name: string;
-    provider: string;
-    cost: number;
-    stock: number;
-    controlStock: boolean;
-  }) => void;
+  onSave: (data: SaveData) => void;
 }) {
-
   const [name, setName] = useState(product?.name ?? "");
   const [provider, setProvider] = useState(product?.provider ?? "");
   const [cost, setCost] = useState<string>(product ? String(product.cost) : "");
   const [stock, setStock] = useState<string>(String(product?.stock ?? 0));
   const [controlStock, setControlStock] = useState(!!product?.controlStock);
+  const [stockType, setStockType] = useState<StockType>(product?.stockType ?? "simple");
+  const [widthCm, setWidthCm] = useState(String(product?.productionConfig?.widthCm ?? ""));
+  const [defaultMeters, setDefaultMeters] = useState(String(product?.productionConfig?.defaultMetersPerBobbin ?? 5000));
 
   return (
     <>
@@ -249,13 +257,21 @@ function ProductFormInner({
             e.preventDefault();
             const c = parseFloat(cost);
             if (!name.trim() || !Number.isFinite(c)) return;
-            onSave({
+            const data: SaveData = {
               name: name.trim(),
               provider: provider.trim(),
               cost: c,
               stock: parseInt(stock) || 0,
               controlStock,
-            });
+              stockType,
+            };
+            if (stockType === "production") {
+              data.productionConfig = {
+                widthCm: parseFloat(widthCm) || undefined,
+                defaultMetersPerBobbin: parseFloat(defaultMeters) || 5000,
+              };
+            }
+            onSave(data);
           }}
           className="space-y-3"
         >
@@ -279,6 +295,35 @@ function ProductFormInner({
             </datalist>
           </div>
 
+          <div>
+            <Label>Tipo de stock</Label>
+            <Select value={stockType} onValueChange={(v) => setStockType(v as StockType)}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="simple">Simple (compra/reventa)</SelectItem>
+                <SelectItem value="production">Producción (bobinas + terminados)</SelectItem>
+              </SelectContent>
+            </Select>
+            <p className="mt-1 text-xs text-muted-foreground">
+              {stockType === "simple"
+                ? "Comprás una cantidad y al vender se descuenta del stock."
+                : "El stock se maneja desde el módulo Stock (bobinas jumbo → producción → terminados)."}
+            </p>
+          </div>
+
+          {stockType === "production" && (
+            <div className="grid gap-3 rounded-md border border-border bg-muted/40 p-3 sm:grid-cols-2">
+              <div>
+                <Label>Ancho (cm)</Label>
+                <Input type="number" value={widthCm} onChange={(e) => setWidthCm(e.target.value)} placeholder="ej: 38" />
+              </div>
+              <div>
+                <Label>Metros por bobina jumbo</Label>
+                <Input type="number" value={defaultMeters} onChange={(e) => setDefaultMeters(e.target.value)} />
+              </div>
+            </div>
+          )}
+
           <div className="grid gap-3 sm:grid-cols-2">
             <div>
               <Label>Costo *</Label>
@@ -291,23 +336,27 @@ function ProductFormInner({
                 required
               />
             </div>
-            <div>
-              <Label>Stock (opcional)</Label>
-              <Input
-                type="number"
-                min="0"
-                value={stock}
-                onChange={(e) => setStock(e.target.value)}
-              />
-            </div>
+            {stockType === "simple" && (
+              <div>
+                <Label>Stock (opcional)</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  value={stock}
+                  onChange={(e) => setStock(e.target.value)}
+                />
+              </div>
+            )}
           </div>
-          <label className="flex items-center gap-2 text-sm">
-            <Checkbox
-              checked={controlStock}
-              onCheckedChange={(v) => setControlStock(!!v)}
-            />
-            Controlar stock
-          </label>
+          {stockType === "simple" && (
+            <label className="flex items-center gap-2 text-sm">
+              <Checkbox
+                checked={controlStock}
+                onCheckedChange={(v) => setControlStock(!!v)}
+              />
+              Controlar stock
+            </label>
+          )}
           <DialogFooter className="gap-2 sm:gap-2">
             <Button
               type="button"
@@ -328,4 +377,5 @@ function ProductFormInner({
     </>
   );
 }
+
 
