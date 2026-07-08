@@ -6,6 +6,17 @@ export interface ProductCostHistoryEntry {
   date: string; // ISO
 }
 
+export type StockType = "simple" | "production";
+
+export interface ProductionConfig {
+  /** Ancho en cm (ej: 30, 38, 45). Solo informativo/agrupación. */
+  widthCm?: number;
+  /** Metros por bobina jumbo por defecto. */
+  defaultMetersPerBobbin?: number;
+  /** Merma sugerida por producción (en metros). */
+  defaultWasteMeters?: number;
+}
+
 export interface Product {
   id: string;
   name: string;
@@ -15,6 +26,9 @@ export interface Product {
   controlStock: boolean;
   history: ProductCostHistoryEntry[];
   createdAt: string; // ISO
+  /** Modo de control de stock. Por compatibilidad, si falta se asume "simple". */
+  stockType?: StockType;
+  productionConfig?: ProductionConfig;
 }
 
 export interface SaleItem {
