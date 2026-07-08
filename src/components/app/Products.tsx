@@ -31,8 +31,15 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useStore } from "@/lib/store";
-import type { Product } from "@/lib/types";
+import type { Product, StockType, ProductionConfig } from "@/lib/types";
 import { currency } from "@/lib/utils-app";
 
 export function Products() {
