@@ -9,6 +9,7 @@ import {
   Users,
   Truck,
   DatabaseBackup,
+  Boxes,
   LogOut,
   User as UserIcon,
   type LucideIcon,
@@ -20,6 +21,7 @@ import { History } from "@/components/app/History";
 import { Metrics } from "@/components/app/Metrics";
 import { BackupPanel } from "@/components/app/BackupPanel";
 import { Contacts } from "@/components/app/Contacts";
+import { Stock } from "@/components/app/Stock";
 import { supabase } from "@/integrations/supabase/client";
 import { setSyncUser } from "@/lib/cloudSync";
 import { useTheme } from "@/hooks/use-theme";
