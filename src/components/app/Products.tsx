@@ -60,6 +60,8 @@ export function Products() {
     cost: number;
     stock: number;
     controlStock: boolean;
+    stockType: StockType;
+    productionConfig?: ProductionConfig;
   }) {
     if (editing) {
       updateProduct(editing.id, data);
@@ -68,7 +70,6 @@ export function Products() {
       addProduct(data);
       toast.success("Producto creado");
     }
-    // Registrar proveedor si es nuevo.
     const prov = data.provider.trim();
     if (prov && !providers.some((p) => p.name.trim().toLowerCase() === prov.toLowerCase())) {
       addProvider({ name: prov });
