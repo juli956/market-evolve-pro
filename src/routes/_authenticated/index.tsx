@@ -137,6 +137,7 @@ function HomePage() {
           {tab === "dashboard" && <Dashboard />}
           {tab === "sales" && <NewSale />}
           {tab === "products" && <Products />}
+          {tab === "stock" && <Stock />}
           {tab === "history" && <History />}
           {tab === "metrics" && <Metrics />}
           {tab === "clients" && <Contacts kind="client" />}
