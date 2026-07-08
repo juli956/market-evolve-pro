@@ -46,6 +46,7 @@ type Tab =
   | "dashboard"
   | "sales"
   | "products"
+  | "stock"
   | "history"
   | "metrics"
   | "clients"
@@ -56,6 +57,7 @@ const TABS: { id: Tab; label: string; Icon: LucideIcon }[] = [
   { id: "dashboard", label: "Dashboard", Icon: BarChart3 },
   { id: "sales", label: "Nueva Venta", Icon: ShoppingCart },
   { id: "products", label: "Productos", Icon: Package },
+  { id: "stock", label: "Stock", Icon: Boxes },
   { id: "history", label: "Historial", Icon: HistoryIcon },
   { id: "metrics", label: "Métricas", Icon: LineChart },
   { id: "clients", label: "Clientes", Icon: Users },
