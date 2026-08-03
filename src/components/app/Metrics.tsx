@@ -35,6 +35,7 @@ import {
   currencyShort,
   currency,
   computeMargin,
+  chartTooltipProps,
 } from "@/lib/utils-app";
 
 type Period = "day" | "week" | "month" | "year" | "all" | "custom";

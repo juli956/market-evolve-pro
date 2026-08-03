@@ -13,7 +13,7 @@ import {
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useStore } from "@/lib/store";
-import { getLocalDateString, currencyShort, computeMargin } from "@/lib/utils-app";
+import { getLocalDateString, currencyShort, computeMargin, chartTooltipProps } from "@/lib/utils-app";
 import { exportSalesExcel, exportMonthlySummary, exportSalesCSV } from "@/lib/exports";
 import {
   ResponsiveContainer,
