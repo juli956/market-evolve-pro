@@ -35,6 +35,8 @@ interface DraftItem {
   qty: number;
   price: number;
   meters?: number; // solo para production
+  /** Costo ajustado manual (incluye comisiones/envío). Si es undefined se usa el automático. */
+  cost?: number;
 }
 
 function emptyItem(): DraftItem {
@@ -75,6 +77,24 @@ export function NewSale() {
 
   const productMap = useMemo(() => new Map(products.map((p) => [p.id, p])), [products]);
 
+  function autoCost(it: DraftItem): number {
+    const p = productMap.get(it.productId);
+    if (!p) return 0;
+    if (p.stockType === "production" && it.meters) {
+      const lc = finishedLotAvgCost(it.productId, it.meters);
+      if (lc !== null) return lc;
+      return (
+        it.meters * computeRawStock(purchases, productions, it.productId).avgCostPerMeter +
+        (pickTubeForMeters(tubes, it.meters)?.cost ?? 0)
+      );
+    }
+    return p.cost;
+  }
+
+  function effectiveCost(it: DraftItem): number {
+    return it.cost !== undefined && !Number.isNaN(it.cost) ? it.cost : autoCost(it);
+  }
+
   const { total, profit } = useMemo(() => {
     let t = 0;
     let g = 0;
@@ -82,10 +102,11 @@ export function NewSale() {
       const p = productMap.get(it.productId);
       if (!p) continue;
       t += it.price * it.qty;
-      g += (it.price - p.cost) * it.qty;
+      g += (it.price - effectiveCost(it)) * it.qty;
     }
     return { total: t, profit: g };
-  }, [items, productMap]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [items, productMap, finishedLots, purchases, productions, tubes]);
 
   function addItem() {
     if (products.length === 0) {
@@ -112,13 +133,12 @@ export function NewSale() {
     for (const it of items) {
       const p = productMap.get(it.productId);
       if (!p || !it.price) continue;
-      let cost = p.cost;
       let name = p.name;
       if (p.stockType === "production" && it.meters) {
         name = `${p.name} · ${it.meters} m`;
-        const lotCost = finishedLotAvgCost(it.productId, it.meters);
-        if (lotCost !== null) cost = lotCost;
       }
+      const base = autoCost(it);
+      const cost = effectiveCost(it);
       finalItems.push({
         productId: p.id,
         name,
@@ -126,6 +146,8 @@ export function NewSale() {
         price: it.price,
         cost,
         profit: (it.price - cost) * it.qty,
+        baseCost: base,
+        commission: cost - base,
       });
     }
     return finalItems;
@@ -311,12 +333,10 @@ export function NewSale() {
           {items.map((it) => {
             const p = productMap.get(it.productId);
             const isProd = p?.stockType === "production";
-            let unitCost = p?.cost ?? 0;
-            if (isProd && it.meters) {
-              const lc = finishedLotAvgCost(it.productId, it.meters);
-              if (lc !== null) unitCost = lc;
-              else unitCost = (it.meters * computeRawStock(purchases, productions, it.productId).avgCostPerMeter) + (pickTubeForMeters(tubes, it.meters)?.cost ?? 0);
-            }
+            const baseCost = autoCost(it);
+            const unitCost = effectiveCost(it);
+            const commission = unitCost - baseCost;
+            const commissionPct = baseCost > 0 ? (commission / baseCost) * 100 : 0;
             const itemProfit = p ? (it.price - unitCost) * it.qty : 0;
             const stockInfo = isProd && it.meters
               ? finishedStockFor(finishedLots, it.productId, it.meters)
@@ -324,7 +344,7 @@ export function NewSale() {
             return (
               <div
                 key={it.key}
-                className="grid grid-cols-1 gap-2 rounded-md border border-border bg-muted/40 p-3 md:grid-cols-[2fr_1fr_1fr_1fr_auto] md:items-end"
+                className="grid grid-cols-1 gap-2 rounded-md border border-border bg-muted/40 p-3 md:grid-cols-[2fr_1fr_.8fr_1fr_1fr_auto] md:items-end"
               >
                 <div>
                   <Label className="text-xs text-muted-foreground">Producto</Label>
@@ -377,6 +397,27 @@ export function NewSale() {
                       updateItem(it.key, { qty: Math.max(1, parseInt(e.target.value) || 1) })
                     }
                   />
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground">Costo</Label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    min={0}
+                    value={it.cost ?? ""}
+                    placeholder={baseCost ? baseCost.toFixed(2) : "0.00"}
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      updateItem(it.key, { cost: v === "" ? undefined : parseFloat(v) || 0 });
+                    }}
+                  />
+                  {it.cost !== undefined && commission !== 0 ? (
+                    <p className="mt-1 text-xs text-warning">
+                      Comisión {currency(commission)} ({commissionPct.toFixed(1)}%)
+                    </p>
+                  ) : (
+                    <p className="mt-1 text-xs text-muted-foreground">Base: {currency(baseCost)}</p>
+                  )}
                 </div>
                 <div>
                   <Label className="text-xs text-muted-foreground">Precio Venta</Label>
