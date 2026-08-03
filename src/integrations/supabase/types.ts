@@ -55,8 +55,10 @@ export type Database = {
           history: Json
           id: string
           name: string
+          production_config: Json | null
           provider: string | null
           stock: number
+          stock_type: string
           updated_at: string
           user_id: string
         }
@@ -67,8 +69,10 @@ export type Database = {
           history?: Json
           id?: string
           name: string
+          production_config?: Json | null
           provider?: string | null
           stock?: number
+          stock_type?: string
           updated_at?: string
           user_id: string
         }
@@ -79,8 +83,10 @@ export type Database = {
           history?: Json
           id?: string
           name?: string
+          production_config?: Json | null
           provider?: string | null
           stock?: number
+          stock_type?: string
           updated_at?: string
           user_id?: string
         }

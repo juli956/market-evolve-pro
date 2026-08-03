@@ -38,6 +38,10 @@ export interface SaleItem {
   price: number;
   cost: number;
   profit: number;
+  /** Costo original del catálogo, cuando en la venta se usó un costo ajustado. */
+  baseCost?: number;
+  /** Comisión/extra por unidad incluido en `cost` (cost - baseCost). */
+  commission?: number;
 }
 
 export interface Sale {

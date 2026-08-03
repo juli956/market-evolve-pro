@@ -35,6 +35,8 @@ type ProductRow = {
   control_stock: boolean;
   history: unknown;
   created_at: string;
+  stock_type: string | null;
+  production_config: unknown;
 };
 
 type SaleRow = {
@@ -58,6 +60,8 @@ function rowToProduct(r: ProductRow): Product {
     controlStock: r.control_stock,
     history: Array.isArray(r.history) ? (r.history as Product["history"]) : [],
     createdAt: r.created_at,
+    stockType: (r.stock_type as Product["stockType"]) ?? "simple",
+    productionConfig: (r.production_config as Product["productionConfig"]) ?? undefined,
   };
 }
 
@@ -72,6 +76,8 @@ function productToRow(p: Product) {
     control_stock: p.controlStock,
     history: p.history ?? [],
     created_at: p.createdAt,
+    stock_type: p.stockType ?? "simple",
+    production_config: p.productionConfig ?? null,
   };
 }
 
