@@ -35,3 +35,18 @@ export function debounce<T extends (...a: unknown[]) => void>(fn: T, ms = 200) {
     t = setTimeout(() => fn(...args), ms);
   };
 }
+
+/** Estilos de tooltip para gráficos (Recharts) acordes al tema oscuro. */
+export const chartTooltipProps = {
+  contentStyle: {
+    borderRadius: 8,
+    fontSize: 12,
+    background: "hsl(var(--popover))",
+    border: "1px solid hsl(var(--border))",
+    color: "hsl(var(--popover-foreground))",
+    boxShadow: "0 4px 16px rgb(0 0 0 / 0.35)",
+  },
+  labelStyle: { color: "hsl(var(--popover-foreground))", fontWeight: 600 },
+  itemStyle: { color: "hsl(var(--popover-foreground))" },
+  cursor: { fill: "hsl(var(--muted) / 0.35)" },
+} as const;
