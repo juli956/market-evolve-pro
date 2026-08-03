@@ -13,7 +13,7 @@ import {
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useStore } from "@/lib/store";
-import { getLocalDateString, currencyShort, computeMargin } from "@/lib/utils-app";
+import { getLocalDateString, currencyShort, computeMargin, chartTooltipProps } from "@/lib/utils-app";
 import { exportSalesExcel, exportMonthlySummary, exportSalesCSV } from "@/lib/exports";
 import {
   ResponsiveContainer,
@@ -275,9 +275,9 @@ export function Dashboard() {
                 <XAxis dataKey="label" tick={{ fontSize: 12 }} />
                 <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => currencyShort(Number(v))} />
                 <Tooltip
+                  {...chartTooltipProps}
                   formatter={(v: number, k) => [currencyShort(v), k === "ventas" ? "Ventas" : "Ganancia"]}
-                  contentStyle={{ borderRadius: 8, fontSize: 12 }}
-                />
+                  />
                 <Bar dataKey="ventas" fill="hsl(221 83% 53%)" radius={[6, 6, 0, 0]} />
                 <Bar dataKey="ganancia" fill="hsl(160 84% 39%)" radius={[6, 6, 0, 0]} />
               </BarChart>
@@ -297,9 +297,9 @@ export function Dashboard() {
                 <XAxis dataKey="label" tick={{ fontSize: 10 }} interval={3} />
                 <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => currencyShort(Number(v))} />
                 <Tooltip
+                  {...chartTooltipProps}
                   formatter={(v: number) => [currencyShort(v), "Ventas"]}
-                  contentStyle={{ borderRadius: 8, fontSize: 12 }}
-                />
+                  />
                 <Line
                   type="monotone"
                   dataKey="ventas"
@@ -333,9 +333,9 @@ export function Dashboard() {
                   <XAxis type="number" tick={{ fontSize: 11 }} tickFormatter={(v) => currencyShort(Number(v))} />
                   <YAxis type="category" dataKey="name" width={110} tick={{ fontSize: 12 }} />
                   <Tooltip
+                    {...chartTooltipProps}
                     formatter={(v: number) => [currencyShort(v), "Ganancia"]}
-                    contentStyle={{ borderRadius: 8, fontSize: 12 }}
-                  />
+                    />
                   <Bar dataKey="profit" fill="hsl(160 84% 39%)" radius={[0, 6, 6, 0]} />
                 </BarChart>
               </ResponsiveContainer>
@@ -367,9 +367,9 @@ export function Dashboard() {
                     ))}
                   </Pie>
                   <Tooltip
+                    {...chartTooltipProps}
                     formatter={(v: number) => currencyShort(v)}
-                    contentStyle={{ borderRadius: 8, fontSize: 12 }}
-                  />
+                    />
                   <Legend wrapperStyle={{ fontSize: 11 }} />
                 </PieChart>
               </ResponsiveContainer>

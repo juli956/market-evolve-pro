@@ -35,6 +35,7 @@ import {
   currencyShort,
   currency,
   computeMargin,
+  chartTooltipProps,
 } from "@/lib/utils-app";
 
 type Period = "day" | "week" | "month" | "year" | "all" | "custom";
@@ -278,7 +279,7 @@ export function Metrics() {
               <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
               <XAxis dataKey="date" tick={{ fontSize: 11 }} />
               <YAxis tick={{ fontSize: 11 }} />
-              <Tooltip formatter={(v: number) => currency(v)} />
+              <Tooltip {...chartTooltipProps} formatter={(v: number) => currency(v)} />
               <Legend />
               <Bar dataKey="ventas" fill="hsl(var(--primary))" name="Ventas" />
               <Bar dataKey="ganancia" fill="hsl(var(--success))" name="Ganancia" />
@@ -297,7 +298,7 @@ export function Metrics() {
               <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
               <XAxis dataKey="mes" tick={{ fontSize: 11 }} />
               <YAxis tick={{ fontSize: 11 }} />
-              <Tooltip formatter={(v: number) => currency(v)} />
+              <Tooltip {...chartTooltipProps} formatter={(v: number) => currency(v)} />
               <Legend />
               <Line
                 type="monotone"
