@@ -157,11 +157,13 @@ function RootComponent() {
           localStorage.setItem(flagKey, "1");
         }
         await pullAll(user.id);
+        await initStockSync(user.id);
       }
       const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
         if (event !== "SIGNED_IN" && event !== "SIGNED_OUT" && event !== "USER_UPDATED") return;
         if (event === "SIGNED_OUT") {
           setSyncUser(null);
+          stopStockSync();
         } else if (session?.user) {
           const u = session.user;
           const flagKey = "gp_cloud_synced_v1_" + u.id;
@@ -171,6 +173,7 @@ function RootComponent() {
               localStorage.setItem(flagKey, "1");
             }
             await pullAll(u.id);
+            await initStockSync(u.id);
           })();
         }
         router.invalidate();
