@@ -734,6 +734,34 @@ function SettingsTab() {
       <p className="text-xs text-muted-foreground">
         Los costos históricos de producciones y ventas ya registradas se conservan. Solo las próximas producciones usarán los nuevos valores.
       </p>
+
+      <div className="space-y-2 rounded-md border border-border p-3">
+        <h4 className="text-sm font-semibold">Sincronización con la nube</h4>
+        <p className="text-xs text-muted-foreground">
+          El stock se sincroniza automáticamente entre la PC y el celular. Si algún
+          dispositivo quedó desactualizado, forzá la dirección correcta.
+        </p>
+        <div className="flex flex-wrap gap-2">
+          <Button
+            variant="outline"
+            onClick={async () => {
+              const { forcePullStock } = await import("@/lib/stockSync");
+              await forcePullStock();
+            }}
+          >
+            Bajar de la nube
+          </Button>
+          <Button
+            variant="outline"
+            onClick={async () => {
+              const { forcePushStock } = await import("@/lib/stockSync");
+              await forcePushStock();
+            }}
+          >
+            Subir este dispositivo
+          </Button>
+        </div>
+      </div>
     </Card>
   );
 }
