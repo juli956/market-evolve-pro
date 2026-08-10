@@ -419,10 +419,10 @@ export function Dashboard() {
         <div className="flex flex-wrap gap-2">
           <Button
             className="bg-success text-success-foreground hover:opacity-90"
-            onClick={() => exportSalesExcel(sales)}
+            onClick={() => exportSalesExcel(sales, products)}
           >
             <FileSpreadsheet className="h-4 w-4" />
-            Exportar Excel (Ventas Detalladas)
+            Exportar Excel (Ventas + Métricas)
           </Button>
           <Button
             className="bg-warning text-warning-foreground hover:opacity-90"
