@@ -146,6 +146,7 @@ function RootComponent() {
     (async () => {
       const { supabase } = await import("@/integrations/supabase/client");
       const { pullAll, pushAllLocal, setSyncUser } = await import("@/lib/cloudSync");
+      const { initStockSync, stopStockSync } = await import("@/lib/stockSync");
       const { data } = await supabase.auth.getSession();
       const user = data.session?.user;
       if (user && !cancelled) {
