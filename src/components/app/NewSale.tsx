@@ -24,7 +24,8 @@ import {
   useStockStore,
   computeRawStock,
   finishedStockFor,
-  pickTubeForMeters,
+  computeAutoUnitCost,
+  finishedLotAvgCost as lotAvgCost,
 } from "@/lib/stock-store";
 import type { SaleItem } from "@/lib/types";
 import { getLocalDateString, currency } from "@/lib/utils-app";
@@ -78,17 +79,12 @@ export function NewSale() {
   const productMap = useMemo(() => new Map(products.map((p) => [p.id, p])), [products]);
 
   function autoCost(it: DraftItem): number {
-    const p = productMap.get(it.productId);
-    if (!p) return 0;
-    if (p.stockType === "production" && it.meters) {
-      const lc = finishedLotAvgCost(it.productId, it.meters);
-      if (lc !== null) return lc;
-      return (
-        it.meters * computeRawStock(purchases, productions, it.productId).avgCostPerMeter +
-        (pickTubeForMeters(tubes, it.meters)?.cost ?? 0)
-      );
-    }
-    return p.cost;
+    return computeAutoUnitCost(productMap.get(it.productId), it.meters, {
+      finishedLots,
+      purchases,
+      productions,
+      tubes,
+    });
   }
 
   function effectiveCost(it: DraftItem): number {
@@ -154,10 +150,7 @@ export function NewSale() {
   }
 
   function finishedLotAvgCost(productId: string, meters: number): number | null {
-    const lots = finishedLots.filter((l) => l.productId === productId && l.meters === meters);
-    const qty = lots.reduce((a, l) => a + l.qty, 0);
-    if (qty === 0) return null;
-    return lots.reduce((a, l) => a + l.qty * l.unitCost, 0) / qty;
+    return lotAvgCost(finishedLots, productId, meters);
   }
 
   function detectShortages(): ShortageInfo[] {

@@ -143,6 +143,36 @@ export function finishedStockFor(lots: FinishedLot[], productId: string, meters?
     .reduce((a, l) => a + l.qty, 0);
 }
 
+/** Costo promedio de lotes terminados para (producto, medida). null si no hay stock terminado. */
+export function finishedLotAvgCost(lots: FinishedLot[], productId: string, meters: number): number | null {
+  const ls = lots.filter((l) => l.productId === productId && l.meters === meters);
+  const qty = ls.reduce((a, l) => a + l.qty, 0);
+  if (qty === 0) return null;
+  return ls.reduce((a, l) => a + l.qty * l.unitCost, 0) / qty;
+}
+
+/**
+ * Costo unitario automático (misma lógica que Nueva Venta):
+ * producción → costo de lotes terminados de esa medida, o film (costo/m) + tubo.
+ * simple → costo del catálogo.
+ */
+export function computeAutoUnitCost(
+  product: { id: string; cost: number; stockType?: string } | undefined,
+  meters: number | undefined,
+  st: { finishedLots: FinishedLot[]; purchases: RawPurchase[]; productions: Production[]; tubes: Tube[] },
+): number {
+  if (!product) return 0;
+  if (product.stockType === "production" && meters) {
+    const lc = finishedLotAvgCost(st.finishedLots, product.id, meters);
+    if (lc !== null) return lc;
+    return (
+      meters * computeRawStock(st.purchases, st.productions, product.id).avgCostPerMeter +
+      (pickTubeForMeters(st.tubes, meters)?.cost ?? 0)
+    );
+  }
+  return product.cost;
+}
+
 const STORAGE_KEY = "gestor-ventas:stock:v1";
 
 export const useStockStore = create<StockState>()(

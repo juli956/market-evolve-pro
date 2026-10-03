@@ -10,6 +10,7 @@ import {
   Truck,
   DatabaseBackup,
   Boxes,
+  Calculator,
   LogOut,
   User as UserIcon,
   type LucideIcon,
@@ -22,6 +23,7 @@ import { Metrics } from "@/components/app/Metrics";
 import { BackupPanel } from "@/components/app/BackupPanel";
 import { Contacts } from "@/components/app/Contacts";
 import { Stock } from "@/components/app/Stock";
+import { Quoter } from "@/components/app/Quoter";
 import { supabase } from "@/integrations/supabase/client";
 import { setSyncUser } from "@/lib/cloudSync";
 import { useTheme } from "@/hooks/use-theme";
@@ -47,6 +49,7 @@ type Tab =
   | "sales"
   | "products"
   | "stock"
+  | "quoter"
   | "history"
   | "metrics"
   | "clients"
@@ -58,6 +61,7 @@ const TABS: { id: Tab; label: string; Icon: LucideIcon }[] = [
   { id: "sales", label: "Nueva Venta", Icon: ShoppingCart },
   { id: "products", label: "Productos", Icon: Package },
   { id: "stock", label: "Stock", Icon: Boxes },
+  { id: "quoter", label: "Cotizador", Icon: Calculator },
   { id: "history", label: "Historial", Icon: HistoryIcon },
   { id: "metrics", label: "Métricas", Icon: LineChart },
   { id: "clients", label: "Clientes", Icon: Users },
@@ -138,6 +142,7 @@ function HomePage() {
           {tab === "sales" && <NewSale />}
           {tab === "products" && <Products />}
           {tab === "stock" && <Stock />}
+          {tab === "quoter" && <Quoter />}
           {tab === "history" && <History />}
           {tab === "metrics" && <Metrics />}
           {tab === "clients" && <Contacts kind="client" />}
