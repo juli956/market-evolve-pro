@@ -14,7 +14,8 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useStore } from "@/lib/store";
 import { getLocalDateString, currencyShort, computeMargin, chartTooltipProps } from "@/lib/utils-app";
-import { exportSalesExcel, exportMonthlySummary, exportSalesCSV } from "@/lib/exports";
+import { exportMonthlySummary, exportSalesCSV } from "@/lib/exports";
+import { ExportExcelDialog } from "./ExportExcelDialog";
 import {
   ResponsiveContainer,
   BarChart,
@@ -417,13 +418,7 @@ export function Dashboard() {
           Descargá tus datos para Excel o respaldo
         </p>
         <div className="flex flex-wrap gap-2">
-          <Button
-            className="bg-success text-success-foreground hover:opacity-90"
-            onClick={() => exportSalesExcel(sales, products)}
-          >
-            <FileSpreadsheet className="h-4 w-4" />
-            Exportar Excel (Ventas + Métricas)
-          </Button>
+          <ExportExcelDialog sales={sales} products={products} />
           <Button
             className="bg-warning text-warning-foreground hover:opacity-90"
             onClick={() => exportMonthlySummary(sales)}
