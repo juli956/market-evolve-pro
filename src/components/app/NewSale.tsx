@@ -24,7 +24,6 @@ import {
   useStockStore,
   computeRawStock,
   finishedStockFor,
-  pickTubeForMeters,
   computeAutoUnitCost,
   finishedLotAvgCost as lotAvgCost,
 } from "@/lib/stock-store";

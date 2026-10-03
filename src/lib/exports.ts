@@ -49,7 +49,87 @@ function workbook(sheets: { name: string; html: string }[]) {
 }
 
 /** Excel de ventas detalladas + hojas de métricas del negocio. */
-export function exportSalesExcel(sales: Sale[], products: Product[] = []) {
+export interface ExportPeriod {
+  from: string; // YYYY-MM-DD
+  to: string;
+  label: string;
+}
+
+const MESES = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+export const monthLabel = (ym: string) => {
+  const [y, m] = ym.split("-");
+  return `${MESES[Number(m) - 1] ?? m} ${y}`;
+};
+const variation = (cur: number, prev: number) =>
+  prev === 0 ? (cur === 0 ? "0.0%" : "Nuevo") : pct(((cur - prev) / Math.abs(prev)) * 100);
+
+/** Hoja de datos históricos: evolución mensual + detalle por producto (todas las ventas). */
+function historicSheet(allSales: Sale[]) {
+  const mAcc: Record<string, { ops: number; qty: number; total: number; profit: number }> = {};
+  const pAcc: Record<string, Record<string, { qty: number; profit: number }>> = {};
+  allSales.forEach((s) => {
+    const k = s.date.slice(0, 7);
+    mAcc[k] ??= { ops: 0, qty: 0, total: 0, profit: 0 };
+    mAcc[k].ops += 1;
+    mAcc[k].total += s.total;
+    mAcc[k].profit += s.profit;
+    s.items.forEach((i) => {
+      mAcc[k].qty += i.qty;
+      pAcc[i.name] ??= {};
+      pAcc[i.name][k] ??= { qty: 0, profit: 0 };
+      pAcc[i.name][k].qty += i.qty;
+      pAcc[i.name][k].profit += i.profit;
+    });
+  });
+  const months = Object.keys(mAcc).sort();
+  const mRows = months.map((k, idx) => {
+    const v = mAcc[k];
+    const costo = v.total - v.profit;
+    const prev = idx > 0 ? mAcc[months[idx - 1]] : null;
+    return [
+      monthLabel(k),
+      money(v.total),
+      prev ? variation(v.total, prev.total) : "-",
+      money(v.profit),
+      prev ? variation(v.profit, prev.profit) : "-",
+      pct(costo > 0 ? (v.profit / costo) * 100 : 0),
+      money(v.ops ? v.total / v.ops : 0),
+      v.qty,
+    ] as (string | number)[];
+  });
+  const pHeaders = ["Producto"];
+  months.forEach((m, idx) => {
+    pHeaders.push(`${monthLabel(m)} unidades`);
+    if (idx > 0) pHeaders.push("Var. % unidades");
+    pHeaders.push(`${monthLabel(m)} ganancia`);
+    if (idx > 0) pHeaders.push("Var. % ganancia");
+  });
+  const pRows = Object.entries(pAcc)
+    .sort((a, b) => a[0].localeCompare(b[0]))
+    .map(([name, byM]) => {
+      const row: (string | number)[] = [name];
+      months.forEach((m, idx) => {
+        const c = byM[m] ?? { qty: 0, profit: 0 };
+        const p = idx > 0 ? (byM[months[idx - 1]] ?? { qty: 0, profit: 0 }) : null;
+        row.push(c.qty);
+        if (p) row.push(variation(c.qty, p.qty));
+        row.push(money(c.profit));
+        if (p) row.push(variation(c.profit, p.profit));
+      });
+      return row;
+    });
+  return (
+    `<h2>DATOS HISTÓRICOS</h2>` +
+    sheet("Evolución mensual", ["Mes","Ventas","Var. % ventas","Ganancia neta","Var. % ganancia","Margen promedio","Ticket promedio","Unidades"], mRows, "Evolución mensual del negocio (variación vs. mes anterior)") +
+    "<br/>" +
+    sheet("Productos por mes", pHeaders, pRows, "Detalle por producto (variación vs. mes anterior)")
+  );
+}
+
+export function exportSalesExcel(allSales: Sale[], products: Product[] = [], period?: ExportPeriod) {
+  const sales = period
+    ? allSales.filter((s) => s.date >= period.from && s.date <= period.to)
+    : allSales;
   const detalle = sales.flatMap((sale) =>
     sale.items.map((item) => {
       const margin = item.cost > 0 ? ((item.price - item.cost) / item.cost) * 100 : 0;
@@ -93,7 +173,8 @@ export function exportSalesExcel(sales: Sale[], products: Product[] = []) {
   const fechas = sales.map((s) => s.date).sort();
 
   const resumen: (string | number)[][] = [
-    ["Período", fechas.length ? `${fechas[0]} → ${fechas[fechas.length - 1]}` : "-"],
+    ["Período seleccionado", period ? `${period.label} (${period.from} → ${period.to})` : "Todo"],
+    ["Ventas con fecha", fechas.length ? `${fechas[0]} → ${fechas[fechas.length - 1]}` : "-"],
     ["Operaciones (ventas)", sales.length],
     ["Unidades vendidas", totalUnidades],
     ["Total facturado", money(totalVentas)],
@@ -343,10 +424,11 @@ export function exportSalesExcel(sales: Sale[], products: Product[] = []) {
         "Métricas por medio de pago",
       ),
     },
+    { name: "Datos Históricos", html: historicSheet(allSales) },
   ]);
 
   download(
-    `ventas_y_metricas_${getLocalDateString()}.xls`,
+    `ventas_${period ? `${period.from}_a_${period.to}` : getLocalDateString()}.xls`,
     new Blob([html], { type: "application/vnd.ms-excel" }),
   );
 }
