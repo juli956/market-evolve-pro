@@ -649,6 +649,49 @@ function ContactDetailDialog({
                   </div>
                 </div>
 
+                {freqStats && (
+                  <div className="rounded-md border bg-muted/40 p-3 text-xs">
+                    <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                      <span className="text-sm font-semibold">Frecuencia de compra</span>
+                      <span
+                        className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-medium ${STATUS_INFO[freqStats.status].className}`}
+                      >
+                        {freqStats.status === "delayed" || freqStats.status === "inactive" ? "⚠ " : ""}
+                        {STATUS_INFO[freqStats.status].label(freqStats)}
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-1 gap-x-4 gap-y-1 sm:grid-cols-3">
+                      <div>
+                        Última compra: <strong>{formatDate(freqStats.lastDate)}</strong>
+                      </div>
+                      <div>
+                        Compras: <strong>{freqStats.count}</strong>
+                      </div>
+                      <div>
+                        Días sin comprar: <strong>{freqStats.daysSince ?? "-"}</strong>
+                      </div>
+                      <div>
+                        Promedio entre compras:{" "}
+                        <strong>
+                          {freqStats.avgInterval != null ? `${freqStats.avgInterval.toFixed(1)} d` : "-"}
+                        </strong>
+                      </div>
+                      <div>
+                        Frecuencia habitual:{" "}
+                        <strong>
+                          {freqStats.frequency != null
+                            ? `${Math.max(1, Math.round(freqStats.frequency))} d${freqStats.provisional ? " (provisional)" : ""}`
+                            : "-"}
+                        </strong>
+                      </div>
+                      <div>
+                        Próxima estimada: <strong>{formatDate(freqStats.nextDate ?? undefined)}</strong>
+                      </div>
+                    </div>
+                    <p className="mt-2 text-muted-foreground">{freqStats.reason}</p>
+                  </div>
+                )}
+
                 {data.topProducts.length > 0 && (
                   <div>
                     <h4 className="mb-2 text-sm font-semibold">Productos favoritos</h4>
