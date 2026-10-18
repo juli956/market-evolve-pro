@@ -137,18 +137,76 @@ export function Contacts({ kind }: Props) {
     }
   }, [kind, sales, products]);
 
+  // Seguimiento de frecuencia por cliente (se recalcula con ventas y con el paso del tiempo).
+  const clientStats = useMemo(() => {
+    const acc: Record<string, ClientStats> = {};
+    if (kind !== "client") return acc;
+    items.forEach((c) => {
+      acc[c.id] = computeClientStats(sales, c.name, thresholds, now);
+    });
+    return acc;
+  }, [kind, items, sales, thresholds, now]);
+
+  const statusCounts = useMemo(() => {
+    const acc: Record<ClientFilter, number> = {
+      all: items.length,
+      active: 0,
+      upcoming: 0,
+      delayed: 0,
+      inactive: 0,
+      new: 0,
+    };
+    if (kind !== "client") return acc;
+    items.forEach((c) => {
+      const s = clientStats[c.id]?.status;
+      if (!s) return;
+      if (s === "no-sales" || s === "new") acc.new += 1;
+      else acc[s] += 1;
+    });
+    return acc;
+  }, [kind, items, clientStats]);
+
   const filtered = useMemo(() => {
     const term = q.trim().toLowerCase();
-    return items
-      .filter(
-        (c) =>
-          !term ||
-          c.name.toLowerCase().includes(term) ||
-          (c.email ?? "").toLowerCase().includes(term) ||
-          (c.phone ?? "").toLowerCase().includes(term),
-      )
-      .sort((a, b) => a.name.localeCompare(b.name));
-  }, [items, q]);
+    let list = items.filter(
+      (c) =>
+        !term ||
+        c.name.toLowerCase().includes(term) ||
+        (c.email ?? "").toLowerCase().includes(term) ||
+        (c.phone ?? "").toLowerCase().includes(term),
+    );
+    if (kind === "client") {
+      if (filter !== "all") {
+        list = list.filter((c) => {
+          const s = clientStats[c.id]?.status;
+          if (filter === "new") return s === "new" || s === "no-sales";
+          return s === filter;
+        });
+      }
+      list = [...list].sort((a, b) => {
+        const sa = clientStats[a.id];
+        const sb = clientStats[b.id];
+        switch (sortBy) {
+          case "last":
+            return (sb?.lastDate ?? "").localeCompare(sa?.lastDate ?? "");
+          case "freq":
+            return (sa?.frequency ?? Infinity) - (sb?.frequency ?? Infinity);
+          case "daysSince":
+            return (sb?.daysSince ?? -1) - (sa?.daysSince ?? -1);
+          case "delay":
+            return (
+              (sb?.daysDelayed ?? -1) - (sa?.daysDelayed ?? -1) ||
+              (sb?.daysInactive ?? -1) - (sa?.daysInactive ?? -1)
+            );
+          default:
+            return a.name.localeCompare(b.name);
+        }
+      });
+    } else {
+      list = [...list].sort((a, b) => a.name.localeCompare(b.name));
+    }
+    return list;
+  }, [items, q, kind, filter, sortBy, clientStats]);
 
   const label = kind === "client" ? "cliente" : "proveedor";
   const labelPlural = kind === "client" ? "Clientes" : "Proveedores";
@@ -190,6 +248,47 @@ export function Contacts({ kind }: Props) {
         placeholder={`Buscar ${label}...`}
       />
 
+      {kind === "client" && (
+        <div className="flex flex-wrap items-center gap-2">
+          {CLIENT_FILTERS.map((f) => (
+            <button
+              key={f.value}
+              onClick={() => setFilter(f.value)}
+              className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
+                filter === f.value
+                  ? "border-primary bg-primary/15 text-primary"
+                  : "border-border bg-muted/40 text-muted-foreground hover:bg-muted"
+              }`}
+            >
+              {f.label} ({statusCounts[f.value]})
+            </button>
+          ))}
+          <div className="ml-auto flex items-center gap-2">
+            <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortBy)}>
+              <SelectTrigger className="h-8 w-[190px] text-xs">
+                <SelectValue placeholder="Ordenar por" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="name">Nombre</SelectItem>
+                <SelectItem value="last">Última compra</SelectItem>
+                <SelectItem value="freq">Frecuencia de compra</SelectItem>
+                <SelectItem value="daysSince">Días sin comprar</SelectItem>
+                <SelectItem value="delay">Nivel de demora</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 text-xs"
+              onClick={() => setShowConfig(true)}
+              title="Ajustar umbrales de demora e inactividad"
+            >
+              ⚙ Frecuencia
+            </Button>
+          </div>
+        </div>
+      )}
+
       {filtered.length === 0 ? (
         <Card className="p-8 text-center text-sm text-muted-foreground">
           {items.length === 0
@@ -201,9 +300,9 @@ export function Contacts({ kind }: Props) {
           {filtered.map((c) => {
             const key = c.name.trim().toLowerCase();
             const st = stats[key];
-            const lastDate = kind === "client" ? (st as { last?: string } | undefined)?.last : undefined;
-            const inactiveDays = lastDate ? Math.floor((Date.now() - new Date(lastDate).getTime()) / 86400000) : null;
-            const isInactive = kind === "client" && inactiveDays !== null && inactiveDays > 60;
+            const cst = kind === "client" ? clientStats[c.id] : undefined;
+            const statusInfo = cst ? STATUS_INFO[cst.status] : null;
+            const isAlert = cst?.status === "delayed" || cst?.status === "inactive";
             return (
               <Card
                 key={c.id}
@@ -214,12 +313,13 @@ export function Contacts({ kind }: Props) {
                   <div>
                     <div className="flex items-center gap-2 font-semibold">
                       <span>{c.name}</span>
-                      {isInactive && (
+                      {cst && statusInfo && (
                         <span
-                          title={`Sin compras hace ${inactiveDays} días (última: ${formatDate(lastDate)})`}
-                          className="inline-flex items-center gap-1 rounded-full border border-warning/40 bg-warning/10 px-2 py-0.5 text-[10px] font-medium text-warning"
+                          title={cst.reason}
+                          className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-medium ${statusInfo.className}`}
                         >
-                          ⚠ Inactivo {inactiveDays}d
+                          {isAlert ? "⚠ " : ""}
+                          {statusInfo.label(cst)}
                         </span>
                       )}
                     </div>
