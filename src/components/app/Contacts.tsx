@@ -711,6 +711,10 @@ function ContactDetailDialog({
                   </div>
                 )}
 
+                {freqStats && freqStats.count > 0 && (
+                  <WhatsappMessage clientName={contact.name} stats={freqStats} />
+                )}
+
                 <div>
                   <h4 className="mb-2 text-sm font-semibold">Historial de ventas</h4>
                   {data.sales.length === 0 ? (
