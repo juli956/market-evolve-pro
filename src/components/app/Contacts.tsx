@@ -403,6 +403,7 @@ export function Contacts({ kind }: Props) {
         kind={kind}
         sales={sales}
         products={products}
+        thresholds={thresholds}
         onOpenChange={(o) => !o && setViewing(null)}
         onEdit={(c) => {
           setViewing(null);
@@ -437,6 +438,18 @@ export function Contacts({ kind }: Props) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {kind === "client" && (
+        <FrequencyConfigDialog
+          open={showConfig}
+          onClose={() => setShowConfig(false)}
+          thresholds={thresholds}
+          onSave={(t) => {
+            saveThresholds(t);
+            setShowConfig(false);
+          }}
+        />
+      )}
     </div>
   );
 }
@@ -544,6 +557,7 @@ function ContactDetailDialog({
   kind,
   sales,
   products,
+  thresholds,
   onOpenChange,
   onEdit,
 }: {
@@ -551,6 +565,7 @@ function ContactDetailDialog({
   kind: Kind;
   sales: Sale[];
   products: Product[];
+  thresholds: ClientThresholds;
   onOpenChange: (o: boolean) => void;
   onEdit: (c: Client | Provider) => void;
 }) {
@@ -585,6 +600,14 @@ function ContactDetailDialog({
       return { kind: "provider" as const, products: myProducts, totalStock, totalCostValue };
     }
   }, [contact, kind, sales, products]);
+
+  const freqStats = useMemo(
+    () =>
+      contact && kind === "client"
+        ? computeClientStats(sales, contact.name, thresholds)
+        : null,
+    [contact, kind, sales, thresholds],
+  );
 
   return (
     <Dialog open={!!contact} onOpenChange={onOpenChange}>
