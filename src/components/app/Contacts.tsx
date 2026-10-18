@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,10 +20,49 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useStore } from "@/lib/store";
 import type { Client, Provider, Sale, Product } from "@/lib/types";
 import { currency, currencyShort, formatDate } from "@/lib/utils-app";
+import {
+  computeClientStats,
+  DEFAULT_THRESHOLDS,
+  STATUS_INFO,
+  whatsappTemplate,
+  type ClientStats,
+  type ClientThresholds,
+} from "@/lib/client-frequency";
 import { toast } from "sonner";
+
+const THRESH_KEY = "gestor-ventas:client-thresholds:v1";
+
+function loadThresholds(): ClientThresholds {
+  try {
+    const raw = typeof window !== "undefined" ? localStorage.getItem(THRESH_KEY) : null;
+    if (raw) return { ...DEFAULT_THRESHOLDS, ...JSON.parse(raw) };
+  } catch {
+    /* ignore */
+  }
+  return DEFAULT_THRESHOLDS;
+}
+
+type ClientFilter = "all" | "active" | "upcoming" | "delayed" | "inactive" | "new";
+type SortBy = "name" | "last" | "freq" | "daysSince" | "delay";
+
+const CLIENT_FILTERS: { value: ClientFilter; label: string }[] = [
+  { value: "all", label: "Todos" },
+  { value: "active", label: "Activos" },
+  { value: "upcoming", label: "Próximas compras" },
+  { value: "delayed", label: "Demoradas" },
+  { value: "inactive", label: "Inactivos" },
+  { value: "new", label: "Nuevos / sin historial" },
+];
 
 
 type Kind = "client" | "provider";
@@ -46,6 +85,29 @@ export function Contacts({ kind }: Props) {
   const [creating, setCreating] = useState(false);
   const [toDelete, setToDelete] = useState<Client | Provider | null>(null);
   const [viewing, setViewing] = useState<Client | Provider | null>(null);
+
+  // Seguimiento de frecuencia de compra (solo clientes)
+  const [now, setNow] = useState(() => Date.now());
+  const [thresholds, setThresholds] = useState<ClientThresholds>(loadThresholds);
+  const [filter, setFilter] = useState<ClientFilter>("all");
+  const [sortBy, setSortBy] = useState<SortBy>("name");
+  const [showConfig, setShowConfig] = useState(false);
+
+  // Recalcula los estados con el paso del tiempo (aunque no haya ventas nuevas).
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), 60_000);
+    return () => clearInterval(t);
+  }, []);
+
+  const saveThresholds = (t: ClientThresholds) => {
+    setThresholds(t);
+    try {
+      localStorage.setItem(THRESH_KEY, JSON.stringify(t));
+    } catch {
+      /* ignore */
+    }
+    toast.success("Configuración de frecuencia guardada");
+  };
 
 
   const stats = useMemo(() => {
