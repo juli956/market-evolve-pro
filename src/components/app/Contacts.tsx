@@ -818,3 +818,132 @@ function ContactDetailDialog({
   );
 }
 
+/* -------------------- Mensaje de WhatsApp -------------------- */
+
+function WhatsappMessage({ clientName, stats }: { clientName: string; stats: ClientStats }) {
+  const [msg, setMsg] = useState(() => whatsappTemplate(clientName, stats));
+
+  // Si cambia el estado del cliente (p. ej. pasa a demorado), sugerir el mensaje nuevo.
+  useEffect(() => {
+    setMsg(whatsappTemplate(clientName, stats));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [clientName, stats.status]);
+
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(msg);
+      toast.success("Mensaje copiado al portapapeles");
+    } catch {
+      toast.error("No se pudo copiar el mensaje");
+    }
+  };
+
+  return (
+    <div>
+      <h4 className="mb-2 text-sm font-semibold">💬 Mensaje de WhatsApp</h4>
+      <Textarea
+        rows={3}
+        value={msg}
+        onChange={(e) => setMsg(e.target.value)}
+        className="text-xs"
+      />
+      <div className="mt-2 flex justify-end">
+        <Button variant="outline" size="sm" onClick={copy}>
+          📋 Copiar mensaje
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+/* -------------------- Configuración de umbrales -------------------- */
+
+function FrequencyConfigDialog({
+  open,
+  onClose,
+  thresholds,
+  onSave,
+}: {
+  open: boolean;
+  onClose: () => void;
+  thresholds: ClientThresholds;
+  onSave: (t: ClientThresholds) => void;
+}) {
+  const [delay, setDelay] = useState(String(thresholds.delayMult));
+  const [inact, setInact] = useState(String(thresholds.inactiveMult));
+  const [upcoming, setUpcoming] = useState(String(thresholds.upcomingDays));
+
+  useEffect(() => {
+    if (!open) return;
+    setDelay(String(thresholds.delayMult));
+    setInact(String(thresholds.inactiveMult));
+    setUpcoming(String(thresholds.upcomingDays));
+  }, [open, thresholds]);
+
+  const submit = () => {
+    const d = parseFloat(delay.replace(",", "."));
+    const i = parseFloat(inact.replace(",", "."));
+    const u = parseInt(upcoming, 10);
+    if (!Number.isFinite(d) || d < 1) {
+      toast.error("El multiplicador de demora debe ser 1 o más");
+      return;
+    }
+    if (!Number.isFinite(i) || i <= d) {
+      toast.error("El multiplicador de inactividad debe ser mayor que el de demora");
+      return;
+    }
+    if (!Number.isFinite(u) || u < 0) {
+      toast.error("Los días de aviso previo no pueden ser negativos");
+      return;
+    }
+    onSave({ delayMult: d, inactiveMult: i, upcomingDays: u });
+  };
+
+  const exampleFreq = 20;
+  return (
+    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>⚙ Configuración de frecuencia de compra</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-3 text-sm">
+          <label className="block">
+            <span className="text-muted-foreground">
+              Compra demorada: más de X veces la frecuencia habitual
+            </span>
+            <Input value={delay} onChange={(e) => setDelay(e.target.value)} />
+          </label>
+          <label className="block">
+            <span className="text-muted-foreground">
+              Cliente inactivo: más de X veces la frecuencia habitual
+            </span>
+            <Input value={inact} onChange={(e) => setInact(e.target.value)} />
+          </label>
+          <label className="block">
+            <span className="text-muted-foreground">
+              Aviso de próxima compra: días antes de la fecha estimada
+            </span>
+            <Input value={upcoming} onChange={(e) => setUpcoming(e.target.value)} />
+          </label>
+          <p className="rounded bg-muted/50 p-2 text-xs text-muted-foreground">
+            Ejemplo con la configuración actual: si un cliente compra cada {exampleFreq} días,
+            la compra se marca demorada a los{" "}
+            <strong>{Math.round(parseFloat(delay.replace(",", ".")) * exampleFreq) || "?"} días</strong>{" "}
+            e inactivo a los{" "}
+            <strong>{Math.round(parseFloat(inact.replace(",", ".")) * exampleFreq) || "?"} días</strong>{" "}
+            sin comprar.
+          </p>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>
+            Cancelar
+          </Button>
+          <Button className="bg-primary text-primary-foreground" onClick={submit}>
+            Guardar
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
