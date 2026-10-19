@@ -662,7 +662,7 @@ function ContactDetailDialog({
                     </div>
                     <div className="grid grid-cols-1 gap-x-4 gap-y-1 sm:grid-cols-3">
                       <div>
-                        Última compra: <strong>{formatDate(freqStats.lastDate)}</strong>
+                        Última compra: <strong>{formatDate(freqStats.lastDate ?? undefined)}</strong>
                       </div>
                       <div>
                         Compras: <strong>{freqStats.count}</strong>
